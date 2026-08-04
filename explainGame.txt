@@ -1,0 +1,427 @@
+Aktuell ergibt sich aus deinen Regeln und dem eingebauten Code folgendes Spiel:
+
+Ziel des Spiels
+
+Jeder Spieler sagt vorher voraus, wie viele Stiche er gewinnen wird.
+
+Am Ende der Runde bekommt man Punkte dafür, wenn man seine Vorhersage möglichst genau trifft.
+
+Karten
+
+Es gibt insgesamt 80 Karten.
+
+Farben
+Rot
+Blau
+Grün
+Gelb
+Werte
+
+Jede Farbe hat:
+
+Plain Text
+1
+1 bis 20
+2
+ 
+Weitere Zeilen anzeigen
+
+Beispiel:
+
+Plain Text
+1
+Rot 1
+2
+Rot 2
+3
+...
+4
+Rot 20
+Weitere Zeilen anzeigen
+Spieler
+Plain Text
+1
+2 bis 10 Spieler
+Weitere Zeilen anzeigen
+Rundenbeginn
+
+Der Spielleiter legt fest:
+
+Plain Text
+1
+Wie viele Karten ausgeteilt werden.
+Weitere Zeilen anzeigen
+
+Beispiel:
+
+Plain Text
+1
+5 Karten pro Spieler
+Weitere Zeilen anzeigen
+
+Die Karten werden zufällig gemischt und verteilt.
+
+Tipps
+
+Jeder Spieler gibt anschließend einen Tipp ab:
+
+Plain Text
+1
+Wie viele Stiche werde ich gewinnen?
+Weitere Zeilen anzeigen
+
+Beispiel:
+
+Plain Text
+1
+Lukas: 3
+2
+Anna: 1
+3
+Tom: 1
+Weitere Zeilen anzeigen
+
+Diese Zahl wird gespeichert.
+
+Danach beginnt das Spiel.
+
+Stichablauf
+Erster Spieler
+
+Der aktuelle Spieler spielt eine Karte.
+
+Beispiel:
+
+Plain Text
+1
+Blau 12
+Weitere Zeilen anzeigen
+
+Damit wird:
+
+Plain Text
+1
+Blau
+Weitere Zeilen anzeigen
+
+zur Stichfarbe.
+
+Bedienpflicht
+
+Alle anderen Spieler müssen Blau spielen, wenn sie Blau besitzen.
+
+Beispiel:
+
+Hand
+Plain Text
+1
+Blau 4
+2
+Rot 10
+3
+Gelb 20
+Weitere Zeilen anzeigen
+
+Dann muss gespielt werden:
+
+Plain Text
+1
+Blau 4
+Weitere Zeilen anzeigen
+
+Rot oder Gelb sind nicht erlaubt.
+
+Keine passende Farbe
+
+Wenn ein Spieler die Stichfarbe nicht besitzt:
+
+Beispiel:
+
+Plain Text
+1
+Rot 8
+2
+Gelb 5
+3
+ 
+Weitere Zeilen anzeigen
+
+und Stichfarbe ist:
+
+Plain Text
+1
+Blau
+Weitere Zeilen anzeigen
+
+darf beliebig gespielt werden:
+
+Plain Text
+1
+Rot 8
+Weitere Zeilen anzeigen
+
+oder
+
+Plain Text
+1
+Gelb 5
+Weitere Zeilen anzeigen
+Trumpf
+Rot ist Trumpf
+
+Sobald mindestens eine rote Karte im Stich liegt, gewinnt die höchste rote Karte.
+
+Beispiel:
+
+Plain Text
+1
+Blau 20
+2
+Grün 19
+3
+Rot 1
+4
+Gelb 18
+Weitere Zeilen anzeigen
+
+Gewinner:
+
+Plain Text
+1
+Rot 1
+Weitere Zeilen anzeigen
+
+weil Rot Trumpf ist.
+
+Mehrere rote Karten
+
+Beispiel:
+
+Plain Text
+1
+Rot 3
+2
+Rot 14
+3
+Rot 8
+Weitere Zeilen anzeigen
+
+Gewinner:
+
+Plain Text
+1
+Rot 14
+Weitere Zeilen anzeigen
+Kein Trumpf im Stich
+
+Wenn keine rote Karte gespielt wurde:
+
+Beispiel:
+
+Plain Text
+1
+Blau 7
+2
+Blau 13
+3
+Gelb 20
+4
+Grün 20
+Weitere Zeilen anzeigen
+
+Gewinner:
+
+Plain Text
+1
+Blau 13
+Weitere Zeilen anzeigen
+
+weil:
+
+Blau die Stichfarbe ist
+nur Karten der Stichfarbe zählen
+Stichgewinner
+
+Der Gewinner:
+
+Plain Text
+1
+bekommt den Stich
+Weitere Zeilen anzeigen
+
+und sein Zähler wird erhöht:
+
+Plain Text
+1
+tricksWon++
+Weitere Zeilen anzeigen
+
+Außerdem beginnt er den nächsten Stich.
+
+Ende der Runde
+
+Die Runde endet, wenn alle Spieler alle Karten gespielt haben.
+
+Beispiel:
+
+Plain Text
+1
+5 Karten ausgeteilt
+Weitere Zeilen anzeigen
+
+Dann gibt es insgesamt:
+
+Plain Text
+1
+5 Stiche
+Weitere Zeilen anzeigen
+Punkteberechnung
+Tipp getroffen
+
+Wenn
+
+Plain Text
+1
+Tipp = gewonnene Stiche
+Weitere Zeilen anzeigen
+
+gilt:
+
+Plain Text
+1
+10 Punkte Bonus
+2
++
+3
+5 Punkte pro gewonnenem Stich
+Weitere Zeilen anzeigen
+
+Beispiele:
+
+Tipp 0
+Plain Text
+1
+Tipp: 0
+2
+Stiche: 0
+3
+ 
+4
+10 Punkte
+Weitere Zeilen anzeigen
+Tipp 3
+Plain Text
+1
+Tipp: 3
+2
+Stiche: 3
+3
+ 
+4
+10 + (3 × 5)
+5
+ 
+6
+= 25 Punkte
+Weitere Zeilen anzeigen
+Tipp 5
+Plain Text
+1
+Tipp: 5
+2
+Stiche: 5
+3
+ 
+4
+10 + (5 × 5)
+5
+ 
+6
+= 35 Punkte
+Weitere Zeilen anzeigen
+Tipp verfehlt
+
+Für jede Abweichung:
+
+Plain Text
+1
+-5 Punkte
+Weitere Zeilen anzeigen
+
+Beispiele:
+
+Zu wenige Stiche
+Plain Text
+1
+Tipp: 4
+2
+Stiche: 2
+3
+ 
+4
+Abweichung 2
+5
+ 
+6
+= -10 Punkte
+7
+``
+Weitere Zeilen anzeigen
+Zu viele Stiche
+Plain Text
+1
+Tipp: 2
+2
+Stiche: 5
+3
+ 
+4
+Abweichung 3
+5
+ 
+6
+= -15 Punkte
+Weitere Zeilen anzeigen
+Gesamtsieger
+
+Nach beliebig vielen Runden werden alle Punkte addiert.
+
+Beispiel:
+
+Plain Text
+1
+Runde 1: 25 Punkte
+2
+Runde 2: -5 Punkte
+3
+Runde 3: 20 Punkte
+Weitere Zeilen anzeigen
+
+Gesamt:
+
+Plain Text
+1
+40 Punkte
+Weitere Zeilen anzeigen
+
+Der Spieler mit den meisten Gesamtpunkten gewinnt.
+
+Was aktuell im Code noch fehlt
+
+Das Regelwerk enthält noch nicht:
+
+Spielcode für Online-Multiplayer
+Verstecken fremder Handkarten
+Mehrere Runden hintereinander ohne Neustart
+Automatische Rundenauswahl durch einen Spielleiter
+Statistiken
+
+Die eigentliche Kernlogik deines Spiels ist aber bereits definiert:
+
+✅ Karten verteilen
+ ✅ Tipps
+ ✅ Bedienpflicht
+ ✅ Trumpf Rot
+ ✅ Stichgewinner
+ ✅ Punkteberechnung
+ ✅ Gesamtscore pro Spieler
