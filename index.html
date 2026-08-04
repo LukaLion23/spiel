@@ -13,30 +13,73 @@
 
     <div class="container">
 
-        <input id="playerName" placeholder="Spielername">
+        <section class="panel">
+            <h2>Spieler</h2>
 
-        <button onclick="addPlayer()">
-            Spieler hinzufügen
-        </button>
+            <input
+                id="playerName"
+                type="text"
+                placeholder="Spielername">
 
-        <ul id="playerList"></ul>
+            <button onclick="addPlayer()">
+                Spieler hinzufügen
+            </button>
+
+            <ul id="playerList"></ul>
+        </section>
 
         <hr>
 
-        <label>Karten pro Spieler:</label>
+        <section class="panel">
+            <h2>Runde</h2>
 
-        <input
-            id="cardsPerPlayer"
-            type="number"
-            min="1"
-            max="20"
-            value="5">
+            <label for="cardsPerPlayer">
+                Karten pro Spieler:
+            </label>
 
-        <button onclick="startGame()">
-            Spiel starten
-        </button>
+            <input
+                id="cardsPerPlayer"
+                type="number"
+                min="1"
+                max="20"
+                value="5">
 
-        <div id="game"></div>
+            <button onclick="startGame()">
+                Spiel starten
+            </button>
+        </section>
+
+        <hr>
+
+        <section
+            class="panel"
+            id="messageArea">
+            <!-- Statusmeldungen -->
+        </section>
+
+        <section
+            class="panel"
+            id="tipsArea">
+            <!-- Tipps -->
+        </section>
+
+        <section
+            class="panel"
+            id="trickArea">
+            <!-- Aktueller Stich -->
+        </section>
+
+        <section
+            class="panel"
+            id="game">
+            <!-- Handkarten -->
+        </section>
+
+        <section
+            class="panel"
+            id="scoreboard">
+            <!-- Punktestand -->
+        </section>
 
     </div>
 
