@@ -2,16 +2,83 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0">
+
     <title>Kartenspiel</title>
 
     <link rel="stylesheet" href="style.css">
+
+    <!-- Deine bisherige lokale Spiellogik -->
+    <script src="script.js" defer></script>
+
+    <!-- Firebase-Online-Lobby -->
+    <script type="module" src="firebase.js"></script>
 </head>
+
 <body>
 
     <h1>Kartenspiel</h1>
 
     <div class="container">
+
+        <section class="panel" id="onlineLobby">
+            <h2>Online-Spiel</h2>
+
+            <label for="onlinePlayerName">
+                Dein Name:
+            </label>
+
+            <input
+                id="onlinePlayerName"
+                type="text"
+                maxlength="30"
+                placeholder="Spielername"
+                autocomplete="off">
+
+            <div>
+                <button
+                    id="createRoomButton"
+                    type="button"
+                    disabled>
+                    Spiel erstellen
+                </button>
+            </div>
+
+            <hr>
+
+            <label for="roomCodeInput">
+                Spielcode:
+            </label>
+
+            <input
+                id="roomCodeInput"
+                type="text"
+                minlength="6"
+                maxlength="6"
+                placeholder="ABC123"
+                autocomplete="off">
+
+            <button
+                id="joinRoomButton"
+                type="button"
+                disabled>
+                Spiel beitreten
+            </button>
+
+            <p id="firebaseStatus">
+                Verbindung zu Firebase wird hergestellt …
+            </p>
+
+            <p id="activeRoomCode"></p>
+
+            <h3>Spieler im Raum</h3>
+            <ul id="onlinePlayerList"></ul>
+        </section>
+
+        <hr>
 
         <section class="panel">
             <h2>Spieler</h2>
@@ -19,9 +86,13 @@
             <input
                 id="playerName"
                 type="text"
-                placeholder="Spielername">
+                maxlength="30"
+                placeholder="Spielername"
+                autocomplete="off">
 
-            <button onclick="addPlayer()">
+            <button
+                type="button"
+                onclick="addPlayer()">
                 Spieler hinzufügen
             </button>
 
@@ -41,11 +112,26 @@
                 id="cardsPerPlayer"
                 type="number"
                 min="1"
-                max="20"
+                max="40"
+                step="1"
                 value="5">
 
-            <button onclick="startGame()">
-                Spiel starten
+            <button
+                type="button"
+                onclick="startGame()">
+                Runde starten
+            </button>
+
+            <button
+                type="button"
+                onclick="finishGame()">
+                Spiel beenden
+            </button>
+
+            <button
+                type="button"
+                onclick="resetGame()">
+                Spiel zurücksetzen
             </button>
         </section>
 
@@ -60,7 +146,6 @@
             <p>
                 Spiel noch nicht gestartet.
             </p>
-
         </section>
 
         <section
@@ -68,7 +153,6 @@
             id="tipsArea">
 
             <h2>Tipps</h2>
-
         </section>
 
         <section
@@ -76,7 +160,6 @@
             id="trickArea">
 
             <h2>Aktueller Stich</h2>
-
         </section>
 
         <section
@@ -84,7 +167,6 @@
             id="game">
 
             <h2>Spielerhände</h2>
-
         </section>
 
         <section
@@ -92,12 +174,10 @@
             id="scoreboard">
 
             <h2>Punktestand</h2>
-
         </section>
 
-    </div>
 
-    <script src="script.js"></script>
+    </div>
 
 </body>
 </html>
