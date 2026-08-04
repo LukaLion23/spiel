@@ -3,6 +3,7 @@ let players = [];
 let currentPlayer = 0;
 let currentTrick = [];
 let leadColor = null;
+let startingPlayer = 0;
 
 const colors = [
     "Rot",
@@ -248,9 +249,141 @@ function saveTips() {
     `;
 }
 
-function playCard(playerIndex, cardIndex) {
+function canPlayCard(player, card) {
 
-    if (playerIndex !== currentPlayer) {
+    if (leadColor === null) {
+        return true;
+    }
+
+    const hasLeadColor =
+        player.hand.some(
+            c => c.color === leadColor
+        );
+
+    if (!hasLeadColor) {
+        return true;
+    }
+
+    return card.color === leadColor;
+}
+
+function determineTrickWinner() {
+
+    const trumpCards =
+        currentTrick.filter(
+            entry =>
+                entry.card.color === "Rot"
+        );
+
+    if (trumpCards.length > 0) {
+
+        trumpCards.sort(
+            (a, b) =>
+                b.card.value - a.card.value
+        );
+
+        return trumpCards[0].playerIndex;
+    }
+
+    const leadCards =
+        currentTrick.filter(
+            entry =>
+                entry.card.color === leadColor
+        );
+
+    leadCards.sort(
+        (a, b) =>
+            b.card.value - a.card.value
+    );
+
+    return leadCards[0].playerIndex;
+}
+
+function finishTrick() {
+
+    const winner =
+        determineTrickWinner();
+
+    players[winner].tricksWon++;
+
+    currentPlayer =
+        winner;
+
+    startingPlayer =
+        winner;
+
+    currentTrick = [];
+    leadColor = null;
+
+    renderCurrentTrick();
+
+    document.getElementById(
+        "messageArea"
+    ).innerHTML = `
+        <h2>Status</h2>
+
+        <p>
+            Stich gewonnen von:
+            <b>${players[winner].name}</b>
+        </p>
+
+        <p>
+            ${players[winner].name}
+            beginnt den nächsten Stich.
+        </p>
+    `;
+
+    if (players[0].hand.length === 0) {
+        finishRound();
+    }
+}
+
+function finishRound() {
+
+    players.forEach(player => {
+
+        if (
+            player.tip ===
+            player.tricksWon
+        ) {
+
+            player.score +=
+                10 +
+                (player.tricksWon * 5);
+
+        } else {
+
+            player.score +=
+                -5 *
+                Math.abs(
+                    player.tip -
+                    player.tricksWon
+                );
+        }
+
+    });
+
+    renderScoreboard();
+
+    document.getElementById(
+        "messageArea"
+    ).innerHTML = `
+        <h2>Runde beendet</h2>
+
+        <p>
+            Punkte wurden berechnet.
+        </p>
+    `;
+}
+
+function playCard(
+    playerIndex,
+    cardIndex
+) {
+
+    if (
+        playerIndex !== currentPlayer
+    ) {
 
         alert(
             "Dieser Spieler ist nicht am Zug."
@@ -259,11 +392,29 @@ function playCard(playerIndex, cardIndex) {
         return;
     }
 
-    const card =
-        players[playerIndex]
-        .hand[cardIndex];
+    const player =
+        players[playerIndex];
 
-    if (leadColor === null) {
+    const card =
+        player.hand[cardIndex];
+
+    if (
+        !canPlayCard(
+            player,
+            card
+        )
+    ) {
+
+        alert(
+            "Du musst Farbe bedienen."
+        );
+
+        return;
+    }
+
+    if (
+        leadColor === null
+    ) {
 
         leadColor =
             card.color;
@@ -274,9 +425,22 @@ function playCard(playerIndex, cardIndex) {
         card
     });
 
-    players[playerIndex]
-        .hand
-        .splice(cardIndex, 1);
+    player.hand.splice(
+        cardIndex,
+        1
+    );
+
+    renderHands();
+    renderCurrentTrick();
+
+    if (
+        currentTrick.length ===
+        players.length
+    ) {
+
+        finishTrick();
+        return;
+    }
 
     currentPlayer++;
 
@@ -284,17 +448,15 @@ function playCard(playerIndex, cardIndex) {
         currentPlayer >=
         players.length
     ) {
+
         currentPlayer = 0;
     }
 
-    renderHands();
-    renderCurrentTrick();
-
     document.getElementById(
         "messageArea"
-    ).innerHTML =
-    `
+    ).innerHTML = `
         <h2>Status</h2>
+
         <p>
             ${players[currentPlayer].name}
             ist am Zug.
