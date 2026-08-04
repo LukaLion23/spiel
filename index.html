@@ -1,21 +1,46 @@
 <!DOCTYPE html>
-2
 <html lang="de">
-3
 <head>
-4
-<meta charset="UTF-8">
-5
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-6
-<title>Hello World</title>
-7
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kartenspiel</title>
+
+    style.css
 </head>
-8
 <body>
-9
-<h1>Hello World</h1>
-10
+
+    <h1>Kartenspiel</h1>
+
+    <div class="container">
+
+        <input id="playerName" placeholder="Spielername">
+
+        <button onclick="addPlayer()">
+            Spieler hinzufügen
+        </button>
+
+        <ul id="playerList"></ul>
+
+        <hr>
+
+        <label>Karten pro Spieler:</label>
+
+        <input
+            id="cardsPerPlayer"
+            type="number"
+            min="1"
+            max="20"
+            value="5">
+
+        <button onclick="startGame()">
+            Spiel starten
+        </button>
+
+        <div id="game"></div>
+
+    </div>
+
+    .js"></script>
+
 </body>
-11
 </html>
