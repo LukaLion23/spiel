@@ -345,6 +345,8 @@ function finishTrick() {
             finishRound();
         }
 
+}
+
 function finishRound() {
 
     players.forEach(player => {
