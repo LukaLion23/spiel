@@ -147,7 +147,6 @@ function startGame() {
     renderTips();
     renderCurrentTrick();
 
-    tipsSaved = true;
     document.getElementById(
         "messageArea"
     ).innerHTML =
@@ -385,24 +384,17 @@ function finishRound() {
     `;
 }
 
-function playCard(
-    playerIndex,
-    cardIndex
-) {
+function playCard(playerIndex,cardIndex) {
 
 
-    if (
-        playerIndex !== currentPlayer
-    ) {
+    if (!tipsSaved) {
+        alert("Zuerst Tipps speichern.");
+        return;
+    }
 
-        if (!tipsSaved) {
-            alert("Zuerst Tipps speichern.");
-            return;
-        }
+    if (playerIndex !== currentPlayer) {
 
-        alert(
-            "Dieser Spieler ist nicht am Zug."
-        );
+        alert("Dieser Spieler ist nicht am Zug.");
 
         return;
     }
