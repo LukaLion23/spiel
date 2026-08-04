@@ -19,3 +19,5 @@ const firebaseConfig = {
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const analytics = getAnalytics(app);
+
+databaseURL: "https://kartenspiel-629e2-default-rtdb.europe-west1.firebasedatabase.app",
