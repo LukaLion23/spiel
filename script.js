@@ -4,6 +4,7 @@ let currentPlayer = 0;
 let currentTrick = [];
 let leadColor = null;
 let startingPlayer = 0;
+let tipsSaved = false;
 
 const colors = [
     "Rot",
@@ -140,11 +141,13 @@ function startGame() {
     currentPlayer = 0;
     currentTrick = [];
     leadColor = null;
+    tipsSaved = false;
 
     renderHands();
     renderTips();
     renderCurrentTrick();
 
+    tipsSaved = true;
     document.getElementById(
         "messageArea"
     ).innerHTML =
@@ -315,7 +318,9 @@ function finishTrick() {
     currentTrick = [];
     leadColor = null;
 
+    renderHands();
     renderCurrentTrick();
+    renderScoreboard();
 
     document.getElementById(
         "messageArea"
@@ -333,10 +338,12 @@ function finishTrick() {
         </p>
     `;
 
-    if (players[0].hand.length === 0) {
-        finishRound();
-    }
-}
+    const roundFinished =
+    players.every(player =>player.hand.length === 0);
+
+        if (roundFinished) {
+            finishRound();
+        }
 
 function finishRound() {
 
@@ -381,9 +388,15 @@ function playCard(
     cardIndex
 ) {
 
+
     if (
         playerIndex !== currentPlayer
     ) {
+
+        if (!tipsSaved) {
+            alert("Zuerst Tipps speichern.");
+            return;
+        }
 
         alert(
             "Dieser Spieler ist nicht am Zug."
