@@ -48,3 +48,18 @@ INSTALLATION
 5. GitHub Pages nach dem Deployment mit Strg + F5 neu laden.
 
 Die Dateien verwenden die Cache-Version ?v=50.
+
+
+UPDATE V51
+
+- Im Warten auf die nächste Runde werden nur noch angezeigt:
+  Spieler, Punkte der letzten Runde und Gesamtpunkte.
+- Das persönliche Rundenergebnis bleibt 7 Sekunden sichtbar.
+- Die zuletzt gewählte Kartenanzahl wird im Spielraum und im
+  Browser des Spielleiters gespeichert.
+- Die verbleibende Kartenanzahl wird in der Spielansicht nicht
+  mehr angezeigt.
+- Die Stichfarbe wird nicht mehr als Text angezeigt.
+  Stattdessen erhält das Feld "Aktueller Stich" einen farbigen Rahmen.
+- Beim Bewegen der Maus über eine Karte bleibt deren Farbe unverändert.
+- Die Cache-Version wurde auf ?v=51 erhöht.

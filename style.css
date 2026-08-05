@@ -1448,3 +1448,80 @@ button.card:disabled::after {
         border-radius: 18px;
     }
 }
+
+
+/* =========================================================
+   Update v51
+   ========================================================= */
+
+/* Im Spiel werden nur Runde und Spieler am Zug angezeigt. */
+.game-status-bar {
+    grid-template-columns:
+        repeat(2, minmax(0, 1fr));
+}
+
+/* Die Stichfarbe wird durch den Rahmen dargestellt. */
+.trick-panel {
+    border: 4px solid transparent;
+    transition:
+        border-color 180ms ease,
+        box-shadow 180ms ease;
+}
+
+.trick-panel.trick-color-rot {
+    border-color: var(--card-red);
+    box-shadow:
+        0 10px 30px
+        rgba(200, 62, 62, 0.18);
+}
+
+.trick-panel.trick-color-blau {
+    border-color: var(--card-blue);
+    box-shadow:
+        0 10px 30px
+        rgba(55, 111, 209, 0.18);
+}
+
+.trick-panel.trick-color-gruen {
+    border-color: var(--card-green);
+    box-shadow:
+        0 10px 30px
+        rgba(47, 152, 91, 0.18);
+}
+
+.trick-panel.trick-color-gelb {
+    border-color: var(--card-yellow);
+    box-shadow:
+        0 10px 30px
+        rgba(212, 154, 22, 0.2);
+}
+
+/* Beim Darüberfahren bleibt die Kartenfarbe unverändert. */
+button.card:hover:not(:disabled),
+#game .card:hover:not(:disabled) {
+    color: inherit;
+    background: var(--card-face) !important;
+}
+
+/* Letzte Runde benötigt auf dem Handy nur drei Spalten. */
+#lastRoundScores table {
+    min-width: 420px;
+}
+
+@media (max-width: 650px) {
+    .game-status-bar {
+        grid-template-columns: 1fr;
+    }
+
+    #lastRoundScores table {
+        min-width: 0;
+    }
+
+    #lastRoundScores th,
+    #lastRoundScores td {
+        padding:
+            10px
+            8px;
+        font-size: 0.86rem;
+    }
+}

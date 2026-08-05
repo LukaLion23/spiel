@@ -24,7 +24,7 @@ import {
     rotateOrder,
     saveRoomSession,
     shuffle
-} from "./firebase-common.js?v=50";
+} from "./firebase-common.js?v=51";
 
 
 let currentUser = null;
@@ -84,6 +84,10 @@ const endRoomButton =
     document.getElementById("endRoomButton");
 
 
+const CARD_COUNT_STORAGE_KEY =
+    "kartenspielCardsPerPlayer";
+
+
 function showError(message) {
     pageError.hidden = false;
     pageError.textContent = message;
@@ -96,6 +100,66 @@ function isHost() {
         roomMeta &&
         roomMeta.hostId === currentUser.uid
     );
+}
+
+
+function initializeSavedCardCount() {
+    if (
+        cardsPerPlayerInput.dataset
+            .savedValueLoaded === "true"
+    ) {
+        return;
+    }
+
+    const roomValue =
+        Number(
+            roomMeta?.lastCardsPerPlayer
+        );
+
+    const browserValue =
+        Number(
+            localStorage.getItem(
+                CARD_COUNT_STORAGE_KEY
+            )
+        );
+
+    let savedValue = 5;
+
+    if (
+        Number.isInteger(roomValue) &&
+        roomValue >= 1
+    ) {
+        savedValue = roomValue;
+    } else if (
+        Number.isInteger(browserValue) &&
+        browserValue >= 1
+    ) {
+        savedValue = browserValue;
+    }
+
+    cardsPerPlayerInput.value =
+        String(savedValue);
+
+    cardsPerPlayerInput.dataset
+        .savedValueLoaded = "true";
+}
+
+
+function saveCardCountLocally() {
+    const value =
+        Number(
+            cardsPerPlayerInput.value
+        );
+
+    if (
+        Number.isInteger(value) &&
+        value >= 1
+    ) {
+        localStorage.setItem(
+            CARD_COUNT_STORAGE_KEY,
+            String(value)
+        );
+    }
 }
 
 
@@ -265,34 +329,44 @@ function renderPage() {
     roundTitle.textContent =
         `Runde ${nextRound} vorbereiten`;
 
-    const maximumCards =
-        players.length > 0
-            ? Math.floor(
+    initializeSavedCardCount();
+
+    if (players.length > 0) {
+        const maximumCards =
+            Math.floor(
                 80 / players.length
-            )
-            : 1;
+            );
 
-    cardsPerPlayerInput.max =
-        String(maximumCards);
-
-    const currentValue =
-        Number(cardsPerPlayerInput.value);
-
-    if (
-        !Number.isInteger(currentValue) ||
-        currentValue < 1
-    ) {
-        cardsPerPlayerInput.value = "1";
-    } else if (
-        currentValue > maximumCards
-    ) {
-        cardsPerPlayerInput.value =
+        cardsPerPlayerInput.max =
             String(maximumCards);
-    }
 
-    cardLimitInfo.textContent =
-        `Bei ${players.length} Spielern sind höchstens ` +
-        `${maximumCards} Karten pro Spieler möglich.`;
+        const currentValue =
+            Number(
+                cardsPerPlayerInput.value
+            );
+
+        if (
+            !Number.isInteger(currentValue) ||
+            currentValue < 1
+        ) {
+            cardsPerPlayerInput.value =
+                "1";
+        } else if (
+            currentValue > maximumCards
+        ) {
+            cardsPerPlayerInput.value =
+                String(maximumCards);
+        }
+
+        saveCardCountLocally();
+
+        cardLimitInfo.textContent =
+            `Bei ${players.length} Spielern sind höchstens ` +
+            `${maximumCards} Karten pro Spieler möglich.`;
+    } else {
+        cardLimitInfo.textContent =
+            "Spieler werden geladen …";
+    }
 
     const hasPreviousRound =
         Boolean(
@@ -318,9 +392,7 @@ function renderLastRound() {
         <table>
             <tr>
                 <th>Spieler</th>
-                <th>Tipp</th>
-                <th>Stiche</th>
-                <th>Rundenpunkte</th>
+                <th>Letzte Runde</th>
                 <th>Gesamt</th>
             </tr>
     `;
@@ -336,8 +408,6 @@ function renderLastRound() {
         html += `
             <tr>
                 <td>${escapeHtml(score.name)}</td>
-                <td>${score.tip ?? 0}</td>
-                <td>${score.tricksWon ?? 0}</td>
                 <td>${score.roundPoints ?? 0}</td>
                 <td>${score.score ?? 0}</td>
             </tr>
@@ -453,6 +523,8 @@ async function startRound() {
         return;
     }
 
+    saveCardCountLocally();
+
     startRoundButton.disabled = true;
     startRoundButton.textContent =
         "Karten werden ausgeteilt …";
@@ -545,6 +617,10 @@ async function startRound() {
         updates[
             `games/${roomCode}/meta/status`
         ] = "tips";
+
+        updates[
+            `games/${roomCode}/meta/lastCardsPerPlayer`
+        ] = cardsPerPlayer;
 
         updates[
             `games/${roomCode}/tipRequests`
@@ -674,6 +750,12 @@ async function endRoom() {
         "./index.html"
     );
 }
+
+
+cardsPerPlayerInput.addEventListener(
+    "input",
+    saveCardCountLocally
+);
 
 
 startRoundButton.addEventListener(

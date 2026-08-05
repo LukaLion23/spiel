@@ -25,7 +25,7 @@ import {
     objectToCards,
     redirectToStatus,
     saveRoomSession
-} from "./firebase-common.js?v=50";
+} from "./firebase-common.js?v=51";
 
 
 let currentUser = null;
@@ -54,8 +54,8 @@ const roundNumberElement =
 const currentPlayerElement =
     document.getElementById("currentPlayer");
 
-const leadColorElement =
-    document.getElementById("leadColor");
+const trickPanel =
+    document.getElementById("trickPanel");
 
 const playerOverview =
     document.getElementById("playerOverview");
@@ -280,9 +280,6 @@ function renderPage() {
             gameState.currentPlayerId
         ]?.name ?? "–";
 
-    leadColorElement.textContent =
-        gameState.leadColor ?? "–";
-
     renderPlayerOverview();
     renderTrick();
     renderHand();
@@ -332,10 +329,6 @@ function renderPlayerOverview() {
                     <strong>${player.tricksWon ?? 0}</strong>
                 </div>
 
-                <div>
-                    <span>Karten</span>
-                    <strong>${player.cardCount ?? 0}</strong>
-                </div>
             </article>
         `;
     }
@@ -347,6 +340,31 @@ function renderPlayerOverview() {
 
 
 function renderTrick() {
+    const colorClassMap = {
+        Rot: "trick-color-rot",
+        Blau: "trick-color-blau",
+        "Grün": "trick-color-gruen",
+        Gelb: "trick-color-gelb"
+    };
+
+    trickPanel.classList.remove(
+        "trick-color-rot",
+        "trick-color-blau",
+        "trick-color-gruen",
+        "trick-color-gelb"
+    );
+
+    const activeColorClass =
+        colorClassMap[
+            gameState?.leadColor
+        ];
+
+    if (activeColorClass) {
+        trickPanel.classList.add(
+            activeColorClass
+        );
+    }
+
     const trick =
         Array.isArray(
             gameState?.currentTrick
@@ -968,7 +986,7 @@ function showResultOverlay() {
     resultRoundNumber =
         gameState.roundNumber;
 
-    let seconds = 5;
+    let seconds = 7;
 
     resultCountdown.textContent =
         String(seconds);
@@ -1010,7 +1028,7 @@ function showResultOverlay() {
         resultTransitionTimer =
             window.setTimeout(
                 moveToNextRoundSetup,
-                5000
+                7000
             );
     }
 }

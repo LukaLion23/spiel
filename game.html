@@ -11,7 +11,7 @@
 
     <link
         rel="stylesheet"
-        href="./style.css?v=50">
+        href="./style.css?v=51">
 </head>
 
 <body class="game-page">
@@ -48,16 +48,6 @@
                 </strong>
             </div>
 
-            <div>
-                <span class="status-label">
-                    Stichfarbe
-                </span>
-
-                <strong id="leadColor">
-                    –
-                </strong>
-            </div>
-
         </section>
 
         <section class="panel">
@@ -66,7 +56,10 @@
             <div id="playerOverview"></div>
         </section>
 
-        <section class="panel">
+        <section
+            class="panel trick-panel"
+            id="trickPanel">
+
             <h2>Aktueller Stich</h2>
 
             <div
@@ -133,7 +126,7 @@
 
             <p class="countdown-text">
                 Nächste Runde in
-                <strong id="resultCountdown">5</strong>
+                <strong id="resultCountdown">7</strong>
                 Sekunden …
             </p>
 
@@ -142,7 +135,7 @@
     </div>
 
     <script type="module">
-        import("./game.js?v=50")
+        import("./game.js?v=51")
             .catch(error => {
                 console.error(error);
 
