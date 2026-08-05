@@ -188,3 +188,19 @@ UPDATE V58
   vorsichtshalber angezeigt und nicht automatisch gelöscht.
 - Auf Handy und Laptop muss unten "Version 58" stehen.
 - Cache-Version: ?v=58
+
+
+UPDATE V59
+
+- Das Fenster "Runde beendet" wird über ein echtes Vollbild-Overlay
+  exakt horizontal und vertikal zentriert.
+- Mobile Browserleisten und Safe-Area-Ränder werden berücksichtigt.
+- Das Mischen verwendet jetzt crypto.getRandomValues statt Math.random.
+- Die Zufallsindexberechnung vermeidet eine Modulo-Verzerrung.
+- Fisher-Yates bleibt das verwendete Mischverfahren.
+- Karten werden nach dem Mischen reihum ausgeteilt und nicht mehr
+  als kompletter Block an einen Spieler.
+- Aufeinanderfolgende Kartenwerte können bei echter Zufälligkeit
+  weiterhin vorkommen. Sie sind allein kein Beweis für schlechtes Mischen.
+- Auf Handy und Laptop muss unten "Version 59" stehen.
+- Cache-Version: ?v=59

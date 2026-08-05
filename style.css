@@ -2381,3 +2381,120 @@ button.card:disabled
         opacity: 1 !important;
     }
 }
+
+
+/* =========================================================
+   Update v59 – Ergebnisfenster zentrieren
+   ========================================================= */
+
+/*
+ * Das Overlay füllt den sichtbaren Handybildschirm vollständig
+ * und zentriert den Dialog unabhängig von Eltern-Layouts,
+ * Browserleisten und vorhandenen Seitenabständen.
+ */
+.result-overlay {
+    position: fixed !important;
+    z-index: 10000 !important;
+
+    inset: 0 !important;
+    width: 100vw !important;
+    min-width: 100vw !important;
+    height: 100vh !important;
+    min-height: 100vh !important;
+
+    display: grid !important;
+    place-items: center !important;
+
+    margin: 0 !important;
+    padding:
+        max(
+            12px,
+            env(safe-area-inset-top)
+        )
+        max(
+            12px,
+            env(safe-area-inset-right)
+        )
+        max(
+            12px,
+            env(safe-area-inset-bottom)
+        )
+        max(
+            12px,
+            env(safe-area-inset-left)
+        ) !important;
+
+    overflow: auto !important;
+    box-sizing: border-box !important;
+}
+
+/*
+ * Auf modernen Mobilbrowsern berücksichtigt 100dvh
+ * die ein- und ausgeblendete Adressleiste.
+ */
+@supports (height: 100dvh) {
+    .result-overlay {
+        height: 100dvh !important;
+        min-height: 100dvh !important;
+    }
+}
+
+.result-overlay[hidden] {
+    display: none !important;
+}
+
+.result-dialog {
+    position: relative !important;
+
+    align-self: center !important;
+    justify-self: center !important;
+
+    width:
+        min(
+            460px,
+            100%
+        ) !important;
+
+    max-width: 460px !important;
+    max-height:
+        calc(
+            100dvh -
+            24px -
+            env(safe-area-inset-top) -
+            env(safe-area-inset-bottom)
+        ) !important;
+
+    margin: auto !important;
+    transform: none !important;
+
+    overflow-y: auto !important;
+    box-sizing: border-box !important;
+}
+
+@media (max-width: 520px) {
+    .result-overlay {
+        padding:
+            max(
+                10px,
+                env(safe-area-inset-top)
+            )
+            max(
+                10px,
+                env(safe-area-inset-right)
+            )
+            max(
+                10px,
+                env(safe-area-inset-bottom)
+            )
+            max(
+                10px,
+                env(safe-area-inset-left)
+            ) !important;
+    }
+
+    .result-dialog {
+        width: 100% !important;
+        max-width: 420px !important;
+        margin-inline: auto !important;
+    }
+}

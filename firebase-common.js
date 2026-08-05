@@ -250,16 +250,73 @@ export function createDeck() {
 }
 
 
+function secureRandomInteger(
+    maximumExclusive
+) {
+    if (
+        !Number.isInteger(maximumExclusive) ||
+        maximumExclusive <= 0
+    ) {
+        throw new Error(
+            "Die Zufallsobergrenze muss eine positive ganze Zahl sein."
+        );
+    }
+
+    /*
+     * Ablehnungsverfahren gegen Modulo-Verzerrung:
+     * Nur Werte aus einem vollständig teilbaren Bereich
+     * werden verwendet.
+     */
+    const maximumUint32 =
+        0x100000000;
+
+    const validLimit =
+        maximumUint32 -
+        (
+            maximumUint32 %
+            maximumExclusive
+        );
+
+    const randomBuffer =
+        new Uint32Array(1);
+
+    let randomValue;
+
+    do {
+        crypto.getRandomValues(
+            randomBuffer
+        );
+
+        randomValue =
+            randomBuffer[0];
+    } while (
+        randomValue >= validLimit
+    );
+
+    return randomValue %
+        maximumExclusive;
+}
+
+
 export function shuffle(deck) {
+    if (!Array.isArray(deck)) {
+        throw new Error(
+            "Zum Mischen wird ein Kartenstapel benötigt."
+        );
+    }
+
+    /*
+     * Unverzerrtes Fisher-Yates-Mischen mit
+     * crypto.getRandomValues statt Math.random.
+     */
     for (
         let index = deck.length - 1;
         index > 0;
         index--
     ) {
         const randomIndex =
-            Math.floor(
-                Math.random() *
-                (index + 1)
+            secureRandomInteger(
+                index + 1
             );
 
         [
@@ -270,6 +327,8 @@ export function shuffle(deck) {
             deck[index]
         ];
     }
+
+    return deck;
 }
 
 

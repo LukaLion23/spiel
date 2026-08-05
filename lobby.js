@@ -25,7 +25,7 @@ import {
     orderedPlayers,
     redirectToStatus,
     saveRoomSession
-} from "./firebase-common.js?v=58";
+} from "./firebase-common.js?v=59";
 
 
 const HEARTBEAT_INTERVAL_MS = 15000;

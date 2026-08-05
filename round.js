@@ -24,7 +24,7 @@ import {
     rotateOrder,
     saveRoomSession,
     shuffle
-} from "./firebase-common.js?v=58";
+} from "./firebase-common.js?v=59";
 
 
 let currentUser = null;
@@ -563,20 +563,50 @@ async function startRound() {
 
         const updates = {};
 
-        for (const player of players) {
-            const cards = [];
+        /*
+         * Karten wie bei einem echten Kartenspiel reihum
+         * austeilen. Jeder Spieler erhält pro Durchgang
+         * genau eine Karte.
+         */
+        const dealtHands =
+            Object.fromEntries(
+                players.map(
+                    player => [
+                        player.id,
+                        []
+                    ]
+                )
+            );
 
-            for (
-                let index = 0;
-                index < cardsPerPlayer;
-                index++
-            ) {
-                cards.push(deck.pop());
+        for (
+            let cardRound = 0;
+            cardRound < cardsPerPlayer;
+            cardRound++
+        ) {
+            for (const player of players) {
+                const dealtCard =
+                    deck.pop();
+
+                if (!dealtCard) {
+                    throw new Error(
+                        "Der Kartenstapel enthält nicht genügend Karten."
+                    );
+                }
+
+                dealtHands[
+                    player.id
+                ].push(
+                    dealtCard
+                );
             }
+        }
 
+        for (const player of players) {
             updates[
                 `games/${roomCode}/hands/${player.id}`
-            ] = cardsToObject(cards);
+            ] = cardsToObject(
+                dealtHands[player.id]
+            );
 
             updates[
                 `games/${roomCode}/scores/${player.id}`
