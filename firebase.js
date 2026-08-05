@@ -255,10 +255,8 @@ async function joinRoom() {
         const gameReference =
             ref(database, `games/${roomCode}`);
 
-        /*
-         * Erst prüfen, ob der Raum existiert.
-         */
-        const gameSnapshot = await get(gameReference);
+        const gameSnapshot =
+            await get(gameReference);
 
         if (!gameSnapshot.exists()) {
             alert("Dieser Spielraum existiert nicht.");
@@ -266,41 +264,55 @@ async function joinRoom() {
             return;
         }
 
+        const game = gameSnapshot.val();
+
+        if (game.status !== "lobby") {
+            alert(
+                "Dieses Spiel wurde bereits gestartet."
+            );
+            setStatus("Beitritt nicht möglich.");
+            return;
+        }
+
         /*
-         * Spieler per Transaktion einfügen, damit die
-         * maximale Spielerzahl auch bei gleichzeitigem
-         * Beitritt eingehalten wird.
+         * Nur die Spielerliste wird per Transaktion geändert.
+         * Dadurch bricht die Transaktion nicht mehr ab,
+         * wenn Firebase beim ersten Durchlauf kurz null liefert.
          */
+        const playersReference = ref(
+            database,
+            `games/${roomCode}/players`
+        );
+
+        let rejectionReason = null;
+
         const result = await runTransaction(
-            gameReference,
-            currentGame => {
-                if (currentGame === null) {
-                    return;
-                }
-
-                if (currentGame.status !== "lobby") {
-                    return;
-                }
-
+            playersReference,
+            currentPlayers => {
                 const players =
-                    currentGame.players ?? {};
+                    currentPlayers ?? {};
+
+                rejectionReason = null;
 
                 /*
-                 * Dasselbe Gerät darf erneut in seinen
-                 * bisherigen Raum eintreten.
+                 * Dasselbe Gerät darf erneut beitreten.
                  */
                 if (players[currentUser.uid]) {
-                    players[currentUser.uid].name =
-                        playerName;
+                    return {
+                        ...players,
 
-                    currentGame.players = players;
-                    return currentGame;
+                        [currentUser.uid]: {
+                            ...players[currentUser.uid],
+                            name: playerName
+                        }
+                    };
                 }
 
                 const playerValues =
                     Object.values(players);
 
                 if (playerValues.length >= 10) {
+                    rejectionReason = "full";
                     return;
                 }
 
@@ -312,17 +324,18 @@ async function joinRoom() {
                     );
 
                 if (nameAlreadyExists) {
+                    rejectionReason = "duplicate-name";
                     return;
                 }
 
-                players[currentUser.uid] = {
-                    name: playerName,
-                    joinedAt: Date.now()
+                return {
+                    ...players,
+
+                    [currentUser.uid]: {
+                        name: playerName,
+                        joinedAt: Date.now()
+                    }
                 };
-
-                currentGame.players = players;
-
-                return currentGame;
             },
             {
                 applyLocally: false
@@ -330,42 +343,20 @@ async function joinRoom() {
         );
 
         if (!result.committed) {
-            const latestSnapshot =
-                await get(gameReference);
-
-            if (!latestSnapshot.exists()) {
-                alert("Dieser Spielraum existiert nicht mehr.");
+            if (rejectionReason === "full") {
+                alert(
+                    "In diesem Spielraum sind bereits 10 Spieler."
+                );
+            } else if (
+                rejectionReason === "duplicate-name"
+            ) {
+                alert(
+                    "Dieser Spielername wird bereits verwendet."
+                );
             } else {
-                const latestGame =
-                    latestSnapshot.val();
-
-                if (latestGame.status !== "lobby") {
-                    alert(
-                        "Dieses Spiel wurde bereits gestartet."
-                    );
-                } else {
-                    const latestPlayers =
-                        Object.values(
-                            latestGame.players ?? {}
-                        );
-
-                    const duplicateName =
-                        latestPlayers.some(player =>
-                            String(player.name)
-                                .toLowerCase() ===
-                            playerName.toLowerCase()
-                        );
-
-                    if (duplicateName) {
-                        alert(
-                            "Dieser Spielername wird bereits verwendet."
-                        );
-                    } else {
-                        alert(
-                            "Der Spielraum ist voll oder der Beitritt wurde abgelehnt."
-                        );
-                    }
-                }
+                alert(
+                    "Der Beitritt wurde abgelehnt. Bitte versuche es erneut."
+                );
             }
 
             setStatus("Beitritt nicht möglich.");
