@@ -1,22 +1,10 @@
-/*
- * Eigentliche Spielseite.
- *
- * Der Raumcode wird aus game.html?room=ABC123 gelesen.
- */
-
 import {
-    initializeApp
-} from "https://www.gstatic.com/firebasejs/12.16.0/firebase-app.js";
-
-import {
-    getAuth,
     onAuthStateChanged,
     signInAnonymously
 } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-auth.js";
 
 import {
     get,
-    getDatabase,
     onValue,
     ref,
     remove,
@@ -24,171 +12,82 @@ import {
     update
 } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-database.js";
 
-
-const firebaseConfig = {
-    apiKey: "AIzaSyCEFNMFPTKy7ZHutPkes_blz8ai-X6cVBk",
-    authDomain: "kartenspiel-629e2.firebaseapp.com",
-    databaseURL:
-        "https://kartenspiel-629e2-default-rtdb.europe-west1.firebasedatabase.app",
-    projectId: "kartenspiel-629e2",
-    storageBucket: "kartenspiel-629e2.firebasestorage.app",
-    messagingSenderId: "862927128087",
-    appId: "1:862927128087:web:34076e472e0a89226dfe52"
-};
-
-
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const database = getDatabase(app);
-
-
-const COLORS = [
-    "Rot",
-    "Blau",
-    "Grün",
-    "Gelb"
-];
-
-const TRUMP_COLOR = "Rot";
+import {
+    auth,
+    database,
+    calculateRoundPoints,
+    canPlayCard,
+    determineTrickWinner,
+    escapeHtml,
+    getNextPlayerId,
+    getRoomCodeFromUrl,
+    objectToCards,
+    redirectToStatus,
+    saveRoomSession
+} from "./firebase-common.js?v=40";
 
 
 let currentUser = null;
-let activeRoomCode = null;
+let roomCode = null;
 let roomMeta = null;
-let roomPlayers = {};
 let gameState = null;
 let gameScores = {};
 let ownHand = {};
 
-let stopMetaListener = null;
-let stopPlayersListener = null;
-let stopStateListener = null;
-let stopScoresListener = null;
-let stopHandListener = null;
-let stopTipRequestsListener = null;
 let stopPlayRequestsListener = null;
-
-let processingTips = false;
 let processingPlay = false;
 let playRequestPending = false;
 
+let scheduledTrickNumber = null;
+let resultRoundNumber = null;
+let resultInterval = null;
+let resultTransitionTimer = null;
 
-const activeRoomCodeElement =
-    document.getElementById("activeRoomCode");
 
-const playerDisplay =
-    document.getElementById("playerDisplay");
+const roundNumberElement =
+    document.getElementById("roundNumber");
 
-const firebaseStatus =
-    document.getElementById("firebaseStatus");
+const currentPlayerElement =
+    document.getElementById("currentPlayer");
 
-const hostPanel =
-    document.getElementById("hostPanel");
+const leadColorElement =
+    document.getElementById("leadColor");
 
-const nextRoundSettings =
-    document.getElementById("nextRoundSettings");
-
-const cardsPerPlayerInput =
-    document.getElementById("cardsPerPlayer");
-
-const nextTrickButton =
-    document.getElementById("nextTrickButton");
-
-const nextRoundButton =
-    document.getElementById("nextRoundButton");
-
-const finishGameButton =
-    document.getElementById("finishGameButton");
-
-const deleteRoomButton =
-    document.getElementById("deleteRoomButton");
-
-const messageArea =
-    document.getElementById("messageArea");
-
-const tipsArea =
-    document.getElementById("tipsArea");
-
-const tipInput =
-    document.getElementById("tipInput");
-
-const submitTipButton =
-    document.getElementById("submitTipButton");
-
-const tipStatus =
-    document.getElementById("tipStatus");
+const playerOverview =
+    document.getElementById("playerOverview");
 
 const trickArea =
     document.getElementById("trickArea");
 
-const gameArea =
-    document.getElementById("game");
+const trickWinner =
+    document.getElementById("trickWinner");
 
-const scoreboard =
-    document.getElementById("scoreboard");
+const handHint =
+    document.getElementById("handHint");
 
-const backButton =
-    document.getElementById("backButton");
+const handArea =
+    document.getElementById("handArea");
 
+const firebaseStatus =
+    document.getElementById("firebaseStatus");
 
-function escapeHtml(value) {
-    const characters = {
-        "&": "&amp;",
-        "<": "&lt;",
-        ">": "&gt;",
-        '"': "&quot;",
-        "'": "&#039;"
-    };
+const resultOverlay =
+    document.getElementById("resultOverlay");
 
-    return String(value).replace(
-        /[&<>"']/g,
-        character => characters[character]
-    );
-}
+const resultTip =
+    document.getElementById("resultTip");
 
+const resultTricks =
+    document.getElementById("resultTricks");
 
-function setFirebaseStatus(message) {
-    firebaseStatus.textContent = message;
-}
+const resultPoints =
+    document.getElementById("resultPoints");
 
+const resultTotal =
+    document.getElementById("resultTotal");
 
-function setMessage(title, message) {
-    messageArea.innerHTML = `
-        <h2>${escapeHtml(title)}</h2>
-        <p>${escapeHtml(message)}</p>
-    `;
-}
-
-
-function cleanRoomCode(value) {
-    return String(value)
-        .trim()
-        .toUpperCase()
-        .replace(/[^A-Z0-9]/g, "");
-}
-
-
-function getRoomCode() {
-    const parameters =
-        new URLSearchParams(
-            window.location.search
-        );
-
-    const queryCode =
-        cleanRoomCode(
-            parameters.get("room") ?? ""
-        );
-
-    if (queryCode.length === 6) {
-        return queryCode;
-    }
-
-    return cleanRoomCode(
-        sessionStorage.getItem(
-            "kartenspielRoomCode"
-        ) ?? ""
-    );
-}
+const resultCountdown =
+    document.getElementById("resultCountdown");
 
 
 function isHost() {
@@ -200,280 +99,46 @@ function isHost() {
 }
 
 
-function getOrderedPlayers() {
-    return Object.entries(roomPlayers)
-        .sort(
-            ([, playerA], [, playerB]) =>
-                (playerA.joinedAt ?? 0) -
-                (playerB.joinedAt ?? 0)
-        )
-        .map(([playerId, player]) => ({
-            id: playerId,
-            ...player
-        }));
-}
+async function initializePage() {
+    roomCode =
+        getRoomCodeFromUrl();
 
-
-function createDeck() {
-    const deck = [];
-
-    for (const color of COLORS) {
-        for (let value = 1; value <= 20; value++) {
-            deck.push({
-                id: `${color}_${value}`,
-                color,
-                value
-            });
-        }
-    }
-
-    return deck;
-}
-
-
-function shuffle(deck) {
-    for (let index = deck.length - 1; index > 0; index--) {
-        const randomIndex = Math.floor(
-            Math.random() * (index + 1)
-        );
-
-        [deck[index], deck[randomIndex]] =
-            [deck[randomIndex], deck[index]];
-    }
-}
-
-
-function cardsToObject(cards) {
-    const result = {};
-
-    for (const card of cards) {
-        result[card.id] = card;
-    }
-
-    return result;
-}
-
-
-function sortCards(cards) {
-    const colorOrder = new Map(
-        COLORS.map((color, index) => [
-            color,
-            index
-        ])
-    );
-
-    return [...cards].sort((cardA, cardB) => {
-        const colorDifference =
-            colorOrder.get(cardA.color) -
-            colorOrder.get(cardB.color);
-
-        if (colorDifference !== 0) {
-            return colorDifference;
-        }
-
-        return cardA.value - cardB.value;
-    });
-}
-
-
-function objectToCards(handObject) {
-    return sortCards(
-        Object.values(
-            handObject ?? {}
-        )
-    );
-}
-
-
-function canPlayCard(
-    handCards,
-    card,
-    leadColor
-) {
-    if (!leadColor) {
-        return true;
-    }
-
-    const hasLeadColor =
-        handCards.some(
-            handCard =>
-                handCard.color === leadColor
-        );
-
-    if (!hasLeadColor) {
-        return true;
-    }
-
-    return card.color === leadColor;
-}
-
-
-function determineTrickWinner(
-    trick,
-    leadColor
-) {
-    const trumpCards =
-        trick.filter(
-            entry =>
-                entry.card.color ===
-                TRUMP_COLOR
-        );
-
-    const relevantCards =
-        trumpCards.length > 0
-            ? trumpCards
-            : trick.filter(
-                entry =>
-                    entry.card.color ===
-                    leadColor
-            );
-
-    return relevantCards.reduce(
-        (highest, current) =>
-            current.card.value >
-            highest.card.value
-                ? current
-                : highest
-    ).playerId;
-}
-
-
-function calculateRoundPoints(
-    tip,
-    tricksWon
-) {
-    if (tip === tricksWon) {
-        return 10 + tricksWon * 5;
-    }
-
-    return -5 * Math.abs(
-        tip - tricksWon
-    );
-}
-
-
-function getNextPlayerId(
-    playerOrder,
-    currentPlayerId
-) {
-    const currentIndex =
-        playerOrder.indexOf(
-            currentPlayerId
-        );
-
-    return playerOrder[
-        (currentIndex + 1) %
-        playerOrder.length
-    ];
-}
-
-
-async function loadGame() {
-    activeRoomCode =
-        getRoomCode();
-
-    if (activeRoomCode.length !== 6) {
-        setFirebaseStatus(
-            "Kein gültiger Spielcode gefunden."
-        );
-
-        setMessage(
-            "Kein Spielraum",
-            "Öffne das Spiel über die Eintrittsseite."
-        );
-
+    if (roomCode.length !== 6) {
+        firebaseStatus.textContent =
+            "Kein Spielraum gefunden.";
         return;
     }
 
     const [
         metaSnapshot,
-        playerSnapshot,
-        stateSnapshot
+        playerSnapshot
     ] = await Promise.all([
         get(
             ref(
                 database,
-                `games/${activeRoomCode}/meta`
+                `games/${roomCode}/meta`
             )
         ),
         get(
             ref(
                 database,
-                `games/${activeRoomCode}/lobbyPlayers/${currentUser.uid}`
-            )
-        ),
-        get(
-            ref(
-                database,
-                `games/${activeRoomCode}/state`
+                `games/${roomCode}/lobbyPlayers/${currentUser.uid}`
             )
         )
     ]);
 
-    if (!metaSnapshot.exists()) {
-        setFirebaseStatus(
-            "Der Spielraum existiert nicht."
-        );
-
-        return;
-    }
-
-    if (!playerSnapshot.exists()) {
-        setFirebaseStatus(
-            "Du gehörst nicht zu diesem Spielraum."
-        );
-
-        setMessage(
-            "Kein Zutritt",
-            "Tritt dem Raum zuerst über die Eintrittsseite bei."
-        );
-
-        return;
-    }
-
-    const meta =
-        metaSnapshot.val();
-
-    if (meta.status === "lobby") {
-        window.location.replace(
-            "./index.html"
-        );
-
-        return;
-    }
-
-    const state =
-        stateSnapshot.val();
-
     if (
-        !state ||
-        !Array.isArray(state.playerOrder) ||
-        !state.playerOrder.includes(
-            currentUser.uid
-        )
+        !metaSnapshot.exists() ||
+        !playerSnapshot.exists()
     ) {
-        setFirebaseStatus(
-            "Du bist kein Teilnehmer dieser Runde."
-        );
-
+        firebaseStatus.textContent =
+            "Du gehörst nicht zu diesem Spiel.";
         return;
     }
 
-    sessionStorage.setItem(
-        "kartenspielRoomCode",
-        activeRoomCode
-    );
-
-    activeRoomCodeElement.innerHTML = `
-        Spielcode:
-        <strong>${escapeHtml(activeRoomCode)}</strong>
-    `;
-
-    playerDisplay.textContent =
-        `Du spielst als ${playerSnapshot.val().name}.`;
-
-    setFirebaseStatus(
-        "Mit dem Spiel verbunden."
+    saveRoomSession(
+        roomCode,
+        playerSnapshot.val().name
     );
 
     attachListeners();
@@ -481,18 +146,15 @@ async function loadGame() {
 
 
 function attachListeners() {
-    stopMetaListener = onValue(
+    onValue(
         ref(
             database,
-            `games/${activeRoomCode}/meta`
+            `games/${roomCode}/meta`
         ),
         snapshot => {
             if (!snapshot.exists()) {
-                setFirebaseStatus(
-                    "Der Spielraum wurde gelöscht."
-                );
-
-                stopAllListeners();
+                firebaseStatus.textContent =
+                    "Der Spielraum wurde gelöscht.";
                 return;
             }
 
@@ -500,37 +162,28 @@ function attachListeners() {
                 snapshot.val();
 
             if (
-                roomMeta.status === "lobby"
+                ![
+                    "playing",
+                    "trickResult",
+                    "roundResult"
+                ].includes(roomMeta.status)
             ) {
-                window.location.replace(
-                    "./index.html"
+                redirectToStatus(
+                    roomMeta.status,
+                    roomCode,
+                    "./game.html"
                 );
-
                 return;
             }
 
-            renderAll();
-            attachHostRequestListeners();
+            attachHostListener();
         }
     );
 
-    stopPlayersListener = onValue(
+    onValue(
         ref(
             database,
-            `games/${activeRoomCode}/lobbyPlayers`
-        ),
-        snapshot => {
-            roomPlayers =
-                snapshot.val() ?? {};
-
-            renderAll();
-        }
-    );
-
-    stopStateListener = onValue(
-        ref(
-            database,
-            `games/${activeRoomCode}/state`
+            `games/${roomCode}/state`
         ),
         snapshot => {
             gameState =
@@ -538,37 +191,28 @@ function attachListeners() {
 
             playRequestPending = false;
 
-            if (
-                gameState?.cardsPerPlayer
-            ) {
-                cardsPerPlayerInput.value =
-                    String(
-                        gameState.cardsPerPlayer
-                    );
-            }
-
-            renderAll();
-            attachHostRequestListeners();
+            renderPage();
+            scheduleHostActions();
         }
     );
 
-    stopScoresListener = onValue(
+    onValue(
         ref(
             database,
-            `games/${activeRoomCode}/scores`
+            `games/${roomCode}/scores`
         ),
         snapshot => {
             gameScores =
                 snapshot.val() ?? {};
 
-            renderAll();
+            renderPage();
         }
     );
 
-    stopHandListener = onValue(
+    onValue(
         ref(
             database,
-            `games/${activeRoomCode}/hands/${currentUser.uid}`
+            `games/${roomCode}/hands/${currentUser.uid}`
         ),
         snapshot => {
             ownHand =
@@ -577,293 +221,257 @@ function attachListeners() {
             playRequestPending = false;
 
             renderHand();
-        },
-        error => {
-            console.error(error);
-
-            gameArea.innerHTML = `
-                <h2>Deine Hand</h2>
-                <p>
-                    Handkarten konnten nicht geladen werden:
-                    ${escapeHtml(error.message)}
-                </p>
-            `;
         }
     );
 }
 
 
-function attachHostRequestListeners() {
+function attachHostListener() {
     if (!isHost()) {
-        stopHostRequestListeners();
+        if (stopPlayRequestsListener) {
+            stopPlayRequestsListener();
+            stopPlayRequestsListener = null;
+        }
         return;
-    }
-
-    if (!stopTipRequestsListener) {
-        stopTipRequestsListener = onValue(
-            ref(
-                database,
-                `games/${activeRoomCode}/tipRequests`
-            ),
-            () => {
-                processTipRequests();
-            }
-        );
-    }
-
-    if (!stopPlayRequestsListener) {
-        stopPlayRequestsListener = onValue(
-            ref(
-                database,
-                `games/${activeRoomCode}/playRequests`
-            ),
-            () => {
-                processPlayRequests();
-            }
-        );
-    }
-}
-
-
-function stopHostRequestListeners() {
-    if (stopTipRequestsListener) {
-        stopTipRequestsListener();
-        stopTipRequestsListener = null;
     }
 
     if (stopPlayRequestsListener) {
-        stopPlayRequestsListener();
-        stopPlayRequestsListener = null;
+        return;
+    }
+
+    stopPlayRequestsListener = onValue(
+        ref(
+            database,
+            `games/${roomCode}/playRequests`
+        ),
+        () => {
+            processPlayRequests();
+        }
+    );
+}
+
+
+function renderPage() {
+    if (!gameState) {
+        return;
+    }
+
+    roundNumberElement.textContent =
+        String(gameState.roundNumber ?? "–");
+
+    currentPlayerElement.textContent =
+        gameScores[
+            gameState.currentPlayerId
+        ]?.name ?? "–";
+
+    leadColorElement.textContent =
+        gameState.leadColor ?? "–";
+
+    renderPlayerOverview();
+    renderTrick();
+    renderHand();
+
+    firebaseStatus.textContent =
+        gameState.status === "playing"
+            ? "Spiel läuft."
+            : gameState.status ===
+                "trickResult"
+                ? "Stich wird ausgewertet."
+                : "Runde beendet.";
+
+    if (
+        gameState.status ===
+        "roundResult"
+    ) {
+        showResultOverlay();
     }
 }
 
 
-function stopAllListeners() {
-    const listeners = [
-        stopMetaListener,
-        stopPlayersListener,
-        stopStateListener,
-        stopScoresListener,
-        stopHandListener
-    ];
+function renderPlayerOverview() {
+    const order =
+        gameState?.playerOrder ??
+        Object.keys(gameScores);
 
-    for (const stopListener of listeners) {
-        if (stopListener) {
-            stopListener();
+    let html = `
+        <div class="player-overview-grid">
+    `;
+
+    for (const playerId of order) {
+        const player =
+            gameScores[playerId];
+
+        if (!player) {
+            continue;
         }
+
+        const current =
+            playerId ===
+            gameState.currentPlayerId;
+
+        html += `
+            <article class="player-stat ${current ? "is-current" : ""}">
+                <h3>${escapeHtml(player.name)}</h3>
+
+                <div>
+                    <span>Tipp</span>
+                    <strong>${player.tip ?? 0}</strong>
+                </div>
+
+                <div>
+                    <span>Stiche</span>
+                    <strong>${player.tricksWon ?? 0}</strong>
+                </div>
+
+                <div>
+                    <span>Karten</span>
+                    <strong>${player.cardCount ?? 0}</strong>
+                </div>
+            </article>
+        `;
     }
 
-    stopMetaListener = null;
-    stopPlayersListener = null;
-    stopStateListener = null;
-    stopScoresListener = null;
-    stopHandListener = null;
+    html += "</div>";
 
-    stopHostRequestListeners();
+    playerOverview.innerHTML = html;
 }
 
 
-async function submitTip() {
-    if (
-        !gameState ||
-        gameState.status !== "tips"
-    ) {
-        return;
+function renderTrick() {
+    const trick =
+        Array.isArray(
+            gameState?.currentTrick
+        )
+            ? gameState.currentTrick
+            : [];
+
+    if (trick.length === 0) {
+        trickArea.innerHTML =
+            "<p>Noch keine Karte gespielt.</p>";
+    } else {
+        trickArea.innerHTML =
+            trick.map(entry => {
+                const playerName =
+                    gameScores[
+                        entry.playerId
+                    ]?.name ?? "Unbekannt";
+
+                return `
+                    <div class="played-card-wrap">
+                        <span>${escapeHtml(playerName)}</span>
+
+                        <div class="card display-card card-${entry.card.color.toLowerCase()}">
+                            <span>${escapeHtml(entry.card.color)}</span>
+                            <strong>${entry.card.value}</strong>
+                        </div>
+                    </div>
+                `;
+            }).join("");
     }
 
-    const tip =
-        Number(tipInput.value);
-
     if (
-        !Number.isInteger(tip) ||
-        tip < 0 ||
-        tip > gameState.cardsPerPlayer
+        gameState.status ===
+        "trickResult"
     ) {
-        alert(
-            `Erlaubt sind ganze Zahlen von 0 bis ` +
-            `${gameState.cardsPerPlayer}.`
-        );
+        const winnerName =
+            gameScores[
+                gameState.lastWinnerId
+            ]?.name ?? "Unbekannt";
 
-        return;
-    }
-
-    submitTipButton.disabled = true;
-
-    try {
-        await set(
-            ref(
-                database,
-                `games/${activeRoomCode}/tipRequests/${currentUser.uid}`
-            ),
-            {
-                tip,
-                createdAt: Date.now()
-            }
-        );
-
-        tipStatus.textContent =
-            "Tipp wurde gesendet.";
-
-    } catch (error) {
-        console.error(error);
-
-        alert(
-            `Tipp konnte nicht gesendet werden: ${error.message}`
-        );
-
-        submitTipButton.disabled = false;
+        trickWinner.textContent =
+            `${winnerName} gewinnt den Stich.`;
+    } else {
+        trickWinner.textContent = "";
     }
 }
 
 
-async function processTipRequests() {
-    if (
-        processingTips ||
-        !isHost()
-    ) {
+function renderHand() {
+    if (!currentUser || !gameState) {
         return;
     }
 
-    processingTips = true;
+    const cards =
+        objectToCards(ownHand);
 
-    try {
-        const [
-            stateSnapshot,
-            scoresSnapshot,
-            requestsSnapshot
-        ] = await Promise.all([
-            get(
-                ref(
-                    database,
-                    `games/${activeRoomCode}/state`
-                )
-            ),
-            get(
-                ref(
-                    database,
-                    `games/${activeRoomCode}/scores`
-                )
-            ),
-            get(
-                ref(
-                    database,
-                    `games/${activeRoomCode}/tipRequests`
-                )
-            )
-        ]);
+    const ownTurn =
+        gameState.status === "playing" &&
+        gameState.currentPlayerId ===
+            currentUser.uid;
 
-        const state =
-            stateSnapshot.val();
+    handHint.textContent =
+        ownTurn
+            ? "Du bist am Zug. Wähle eine Karte."
+            : gameState.status ===
+                "trickResult"
+                ? "Der Stich wird ausgewertet."
+                : "Warte, bis du am Zug bist.";
 
-        const scores =
-            scoresSnapshot.val() ?? {};
+    if (cards.length === 0) {
+        handArea.innerHTML =
+            "<p>Du hast keine Karten mehr.</p>";
+        return;
+    }
 
-        const requests =
-            requestsSnapshot.val() ?? {};
+    handArea.innerHTML =
+        cards.map(card => {
+            const legal =
+                canPlayCard(
+                    cards,
+                    card,
+                    gameState.leadColor
+                );
 
-        if (
-            !state ||
-            state.status !== "tips"
-        ) {
-            return;
-        }
+            const disabled =
+                !ownTurn ||
+                !legal ||
+                playRequestPending;
 
-        const updates = {};
-        let changed = false;
+            let title = "";
 
-        for (
-            const playerId of
-            state.playerOrder
-        ) {
-            const request =
-                requests[playerId];
-
-            const score =
-                scores[playerId];
-
-            if (
-                !request ||
-                !score ||
-                score.tipSubmitted
-            ) {
-                continue;
+            if (!ownTurn) {
+                title =
+                    "Du bist nicht am Zug.";
+            } else if (!legal) {
+                title =
+                    `Du musst ${gameState.leadColor} bedienen.`;
             }
 
-            const tip =
-                Number(request.tip);
+            return `
+                <button
+                    type="button"
+                    class="card card-${card.color.toLowerCase()}"
+                    data-card-id="${escapeHtml(card.id)}"
+                    ${disabled ? "disabled" : ""}
+                    title="${escapeHtml(title)}">
 
-            if (
-                !Number.isInteger(tip) ||
-                tip < 0 ||
-                tip > state.cardsPerPlayer
-            ) {
-                updates[
-                    `games/${activeRoomCode}/tipRequests/${playerId}`
-                ] = null;
+                    <span>${escapeHtml(card.color)}</span>
+                    <strong>${card.value}</strong>
 
-                changed = true;
-                continue;
-            }
+                </button>
+            `;
+        }).join("");
 
-            scores[playerId] = {
-                ...score,
-                tip,
-                tipSubmitted: true
-            };
-
-            updates[
-                `games/${activeRoomCode}/scores/${playerId}/tip`
-            ] = tip;
-
-            updates[
-                `games/${activeRoomCode}/scores/${playerId}/tipSubmitted`
-            ] = true;
-
-            updates[
-                `games/${activeRoomCode}/tipRequests/${playerId}`
-            ] = null;
-
-            changed = true;
-        }
-
-        const allTipsSubmitted =
-            state.playerOrder.every(
-                playerId =>
-                    scores[playerId]
-                        ?.tipSubmitted
+    handArea
+        .querySelectorAll(
+            "[data-card-id]"
+        )
+        .forEach(button => {
+            button.addEventListener(
+                "click",
+                () => {
+                    requestPlayCard(
+                        button.dataset.cardId
+                    );
+                }
             );
-
-        if (allTipsSubmitted) {
-            updates[
-                `games/${activeRoomCode}/state/status`
-            ] = "playing";
-
-            changed = true;
-        }
-
-        if (changed) {
-            await update(
-                ref(database),
-                updates
-            );
-        }
-
-    } catch (error) {
-        console.error(
-            "Tipps konnten nicht verarbeitet werden:",
-            error
-        );
-
-    } finally {
-        processingTips = false;
-    }
+        });
 }
 
 
 async function requestPlayCard(cardId) {
     if (
-        !gameState ||
-        gameState.status !== "playing" ||
+        gameState?.status !== "playing" ||
         gameState.currentPlayerId !==
             currentUser.uid ||
         playRequestPending
@@ -871,11 +479,11 @@ async function requestPlayCard(cardId) {
         return;
     }
 
-    const cards =
-        objectToCards(ownHand);
-
     const selectedCard =
         ownHand[cardId];
+
+    const cards =
+        objectToCards(ownHand);
 
     if (!selectedCard) {
         return;
@@ -891,7 +499,6 @@ async function requestPlayCard(cardId) {
         alert(
             `Du musst ${gameState.leadColor} bedienen.`
         );
-
         return;
     }
 
@@ -902,7 +509,7 @@ async function requestPlayCard(cardId) {
         await set(
             ref(
                 database,
-                `games/${activeRoomCode}/playRequests/${currentUser.uid}`
+                `games/${roomCode}/playRequests/${currentUser.uid}`
             ),
             {
                 cardId,
@@ -942,19 +549,19 @@ async function processPlayRequests() {
             get(
                 ref(
                     database,
-                    `games/${activeRoomCode}/state`
+                    `games/${roomCode}/state`
                 )
             ),
             get(
                 ref(
                     database,
-                    `games/${activeRoomCode}/scores`
+                    `games/${roomCode}/scores`
                 )
             ),
             get(
                 ref(
                     database,
-                    `games/${activeRoomCode}/playRequests`
+                    `games/${roomCode}/playRequests`
                 )
             )
         ]);
@@ -985,12 +592,13 @@ async function processPlayRequests() {
             return;
         }
 
-        const handSnapshot = await get(
-            ref(
-                database,
-                `games/${activeRoomCode}/hands/${playerId}`
-            )
-        );
+        const handSnapshot =
+            await get(
+                ref(
+                    database,
+                    `games/${roomCode}/hands/${playerId}`
+                )
+            );
 
         const hand =
             handSnapshot.val() ?? {};
@@ -1002,10 +610,9 @@ async function processPlayRequests() {
             await remove(
                 ref(
                     database,
-                    `games/${activeRoomCode}/playRequests/${playerId}`
+                    `games/${roomCode}/playRequests/${playerId}`
                 )
             );
-
             return;
         }
 
@@ -1022,123 +629,121 @@ async function processPlayRequests() {
             await remove(
                 ref(
                     database,
-                    `games/${activeRoomCode}/playRequests/${playerId}`
+                    `games/${roomCode}/playRequests/${playerId}`
                 )
             );
-
             return;
         }
 
-        const newLeadColor =
+        const leadColor =
             state.leadColor ??
             selectedCard.color;
 
-        const currentTrick =
+        const trick =
             Array.isArray(
                 state.currentTrick
             )
                 ? [...state.currentTrick]
                 : [];
 
-        currentTrick.push({
+        trick.push({
             playerId,
             card: selectedCard
         });
 
         delete hand[request.cardId];
 
-        const updatedScores = {
-            ...scores,
-
-            [playerId]: {
-                ...scores[playerId],
-                cardCount:
-                    Math.max(
-                        0,
-                        (
-                            scores[playerId]
-                                ?.cardCount ??
-                            1
-                        ) - 1
-                    )
-            }
-        };
+        const newCardCount =
+            Math.max(
+                0,
+                (
+                    scores[playerId]
+                        ?.cardCount ??
+                    1
+                ) - 1
+            );
 
         const updates = {
-            [`games/${activeRoomCode}/hands/${playerId}`]:
-                Object.keys(hand).length > 0
+            [`games/${roomCode}/hands/${playerId}`]:
+                Object.keys(hand).length
                     ? hand
                     : null,
 
-            [`games/${activeRoomCode}/scores/${playerId}/cardCount`]:
-                updatedScores[playerId]
-                    .cardCount,
+            [`games/${roomCode}/scores/${playerId}/cardCount`]:
+                newCardCount,
 
-            [`games/${activeRoomCode}/state/leadColor`]:
-                newLeadColor,
+            [`games/${roomCode}/state/leadColor`]:
+                leadColor,
 
-            [`games/${activeRoomCode}/state/currentTrick`]:
-                currentTrick,
+            [`games/${roomCode}/state/currentTrick`]:
+                trick,
 
-            [`games/${activeRoomCode}/playRequests/${playerId}`]:
+            [`games/${roomCode}/playRequests/${playerId}`]:
                 null
         };
 
         if (
-            currentTrick.length ===
+            trick.length ===
             state.playerOrder.length
         ) {
             const winnerId =
                 determineTrickWinner(
-                    currentTrick,
-                    newLeadColor
+                    trick,
+                    leadColor
                 );
 
             const winnerTricks =
                 (
-                    updatedScores[winnerId]
+                    scores[winnerId]
                         ?.tricksWon ??
                     0
                 ) + 1;
 
-            updatedScores[winnerId] = {
-                ...updatedScores[winnerId],
-                tricksWon: winnerTricks
+            const cardCounts = {
+                ...Object.fromEntries(
+                    state.playerOrder.map(id => [
+                        id,
+                        scores[id]?.cardCount ?? 0
+                    ])
+                ),
+
+                [playerId]:
+                    newCardCount
             };
 
             const roundWillEnd =
                 state.playerOrder.every(
                     id =>
-                        (
-                            updatedScores[id]
-                                ?.cardCount ??
-                            0
-                        ) === 0
+                        cardCounts[id] === 0
                 );
 
             updates[
-                `games/${activeRoomCode}/scores/${winnerId}/tricksWon`
+                `games/${roomCode}/scores/${winnerId}/tricksWon`
             ] = winnerTricks;
 
             updates[
-                `games/${activeRoomCode}/state/status`
+                `games/${roomCode}/state/status`
             ] = "trickResult";
 
             updates[
-                `games/${activeRoomCode}/state/currentPlayerId`
+                `games/${roomCode}/meta/status`
+            ] = "trickResult";
+
+            updates[
+                `games/${roomCode}/state/currentPlayerId`
             ] = winnerId;
 
             updates[
-                `games/${activeRoomCode}/state/lastWinnerId`
+                `games/${roomCode}/state/lastWinnerId`
             ] = winnerId;
 
             updates[
-                `games/${activeRoomCode}/state/roundWillEnd`
+                `games/${roomCode}/state/roundWillEnd`
             ] = roundWillEnd;
 
         } else {
             updates[
-                `games/${activeRoomCode}/state/currentPlayerId`
+                `games/${roomCode}/state/currentPlayerId`
             ] = getNextPlayerId(
                 state.playerOrder,
                 playerId
@@ -1152,7 +757,7 @@ async function processPlayRequests() {
 
     } catch (error) {
         console.error(
-            "Karte konnte nicht verarbeitet werden:",
+            "Spielzug konnte nicht verarbeitet werden:",
             error
         );
 
@@ -1162,44 +767,91 @@ async function processPlayRequests() {
 }
 
 
-async function continueAfterTrick() {
+function scheduleHostActions() {
     if (
         !isHost() ||
-        gameState?.status !==
-            "trickResult"
+        !gameState
     ) {
         return;
     }
 
-    if (gameState.roundWillEnd) {
-        await finishRound();
+    if (
+        gameState.status ===
+        "trickResult" &&
+        scheduledTrickNumber !==
+            gameState.trickNumber
+    ) {
+        scheduledTrickNumber =
+            gameState.trickNumber;
+
+        window.setTimeout(
+            advanceAfterTrick,
+            2500
+        );
+    }
+}
+
+
+async function advanceAfterTrick() {
+    const stateSnapshot =
+        await get(
+            ref(
+                database,
+                `games/${roomCode}/state`
+            )
+        );
+
+    const state =
+        stateSnapshot.val();
+
+    if (
+        !state ||
+        state.status !== "trickResult"
+    ) {
+        return;
+    }
+
+    if (state.roundWillEnd) {
+        await finishRound(state);
         return;
     }
 
     await update(
-        ref(
-            database,
-            `games/${activeRoomCode}/state`
-        ),
+        ref(database),
         {
-            status: "playing",
-            currentPlayerId:
-                gameState.lastWinnerId,
-            leadColor: null,
-            currentTrick: [],
-            roundWillEnd: false
+            [`games/${roomCode}/state/status`]:
+                "playing",
+
+            [`games/${roomCode}/meta/status`]:
+                "playing",
+
+            [`games/${roomCode}/state/currentPlayerId`]:
+                state.lastWinnerId,
+
+            [`games/${roomCode}/state/leadColor`]:
+                null,
+
+            [`games/${roomCode}/state/currentTrick`]:
+                [],
+
+            [`games/${roomCode}/state/roundWillEnd`]:
+                false,
+
+            [`games/${roomCode}/state/trickNumber`]:
+                (state.trickNumber ?? 1) + 1
         }
     );
 }
 
 
-async function finishRound() {
-    const scoresSnapshot = await get(
-        ref(
-            database,
-            `games/${activeRoomCode}/scores`
-        )
-    );
+async function finishRound(state) {
+    const scoresSnapshot =
+        await get(
+            ref(
+                database,
+                `games/${roomCode}/scores`
+            )
+        );
 
     const scores =
         scoresSnapshot.val() ?? {};
@@ -1208,42 +860,46 @@ async function finishRound() {
 
     for (
         const playerId of
-        gameState.playerOrder
+        state.playerOrder
     ) {
-        const playerScore =
+        const player =
             scores[playerId];
 
         const roundPoints =
             calculateRoundPoints(
-                playerScore.tip,
-                playerScore.tricksWon
+                player.tip,
+                player.tricksWon
             );
 
         updates[
-            `games/${activeRoomCode}/scores/${playerId}/roundPoints`
+            `games/${roomCode}/scores/${playerId}/roundPoints`
         ] = roundPoints;
 
         updates[
-            `games/${activeRoomCode}/scores/${playerId}/score`
+            `games/${roomCode}/scores/${playerId}/score`
         ] =
-            (playerScore.score ?? 0) +
+            (player.score ?? 0) +
             roundPoints;
     }
 
     updates[
-        `games/${activeRoomCode}/state/status`
+        `games/${roomCode}/state/status`
     ] = "roundResult";
 
     updates[
-        `games/${activeRoomCode}/state/leadColor`
+        `games/${roomCode}/meta/status`
+    ] = "roundResult";
+
+    updates[
+        `games/${roomCode}/state/leadColor`
     ] = null;
 
     updates[
-        `games/${activeRoomCode}/state/currentTrick`
+        `games/${roomCode}/state/currentTrick`
     ] = [];
 
     updates[
-        `games/${activeRoomCode}/state/roundWillEnd`
+        `games/${roomCode}/state/roundWillEnd`
     ] = false;
 
     await update(
@@ -1253,583 +909,139 @@ async function finishRound() {
 }
 
 
-async function startNextRound() {
+function showResultOverlay() {
     if (
-        !isHost() ||
-        gameState?.status !==
-            "roundResult"
+        resultRoundNumber ===
+        gameState.roundNumber
     ) {
         return;
     }
 
-    const players =
-        getOrderedPlayers();
+    resultRoundNumber =
+        gameState.roundNumber;
 
-    const cardsPerPlayer =
-        Number(
-            cardsPerPlayerInput.value
-        );
+    const ownScore =
+        gameScores[currentUser.uid];
 
-    const maxCards =
-        Math.floor(
-            80 / players.length
-        );
-
-    if (
-        !Number.isInteger(cardsPerPlayer) ||
-        cardsPerPlayer < 1 ||
-        cardsPerPlayer > maxCards
-    ) {
-        alert(
-            `Erlaubt sind 1 bis ${maxCards} Karten.`
-        );
-
+    if (!ownScore) {
         return;
     }
 
-    const deck = createDeck();
-    shuffle(deck);
+    resultTip.textContent =
+        String(ownScore.tip ?? 0);
 
-    const playerOrder =
-        players.map(player => player.id);
+    resultTricks.textContent =
+        String(
+            ownScore.tricksWon ?? 0
+        );
 
-    const roundNumber =
-        (gameState.roundNumber ?? 0) + 1;
+    resultPoints.textContent =
+        String(
+            ownScore.roundPoints ?? 0
+        );
 
-    const startingPlayerId =
-        playerOrder[
-            (roundNumber - 1) %
-            playerOrder.length
-        ];
+    resultTotal.textContent =
+        String(
+            ownScore.score ?? 0
+        );
 
-    const updates = {};
+    resultOverlay.hidden = false;
 
-    for (const player of players) {
-        const cards = [];
+    let seconds = 5;
 
-        for (
-            let index = 0;
-            index < cardsPerPlayer;
-            index++
-        ) {
-            cards.push(deck.pop());
-        }
+    resultCountdown.textContent =
+        String(seconds);
 
-        updates[
-            `games/${activeRoomCode}/hands/${player.id}`
-        ] = cardsToObject(cards);
-
-        updates[
-            `games/${activeRoomCode}/scores/${player.id}`
-        ] = {
-            name: player.name,
-            tip: 0,
-            tipSubmitted: false,
-            tricksWon: 0,
-            roundPoints: 0,
-            score:
-                gameScores[player.id]
-                    ?.score ??
-                0,
-            cardCount: cardsPerPlayer
-        };
+    if (resultInterval) {
+        window.clearInterval(
+            resultInterval
+        );
     }
 
-    updates[
-        `games/${activeRoomCode}/state`
-    ] = {
-        status: "tips",
-        roundNumber,
-        cardsPerPlayer,
-        playerOrder,
-        startingPlayerId,
-        currentPlayerId:
-            startingPlayerId,
-        currentTrick: [],
-        lastWinnerId: null,
-        roundWillEnd: false
-    };
+    resultInterval =
+        window.setInterval(
+            () => {
+                seconds--;
 
-    updates[
-        `games/${activeRoomCode}/tipRequests`
-    ] = null;
+                resultCountdown.textContent =
+                    String(
+                        Math.max(
+                            0,
+                            seconds
+                        )
+                    );
 
-    updates[
-        `games/${activeRoomCode}/playRequests`
-    ] = null;
+                if (seconds <= 0) {
+                    window.clearInterval(
+                        resultInterval
+                    );
 
-    await update(
-        ref(database),
-        updates
-    );
+                    resultInterval = null;
+                }
+            },
+            1000
+        );
+
+    if (
+        isHost() &&
+        !resultTransitionTimer
+    ) {
+        resultTransitionTimer =
+            window.setTimeout(
+                moveToNextRoundSetup,
+                5000
+            );
+    }
 }
 
 
-async function finishGame() {
-    if (!isHost()) {
+async function moveToNextRoundSetup() {
+    resultTransitionTimer = null;
+
+    const stateSnapshot =
+        await get(
+            ref(
+                database,
+                `games/${roomCode}/state`
+            )
+        );
+
+    const state =
+        stateSnapshot.val();
+
+    if (
+        !state ||
+        state.status !== "roundResult"
+    ) {
         return;
     }
 
     await update(
         ref(database),
         {
-            [`games/${activeRoomCode}/meta/status`]:
-                "finished",
+            [`games/${roomCode}/meta/status`]:
+                "roundSetup",
 
-            [`games/${activeRoomCode}/state/status`]:
-                "gameFinished"
+            [`games/${roomCode}/state/status`]:
+                "roundSetup",
+
+            [`games/${roomCode}/state/currentPlayerId`]:
+                null,
+
+            [`games/${roomCode}/state/currentTrick`]:
+                [],
+
+            [`games/${roomCode}/hands`]:
+                null,
+
+            [`games/${roomCode}/tipRequests`]:
+                null,
+
+            [`games/${roomCode}/playRequests`]:
+                null
         }
     );
 }
-
-
-async function deleteRoom() {
-    if (!isHost()) {
-        return;
-    }
-
-    const confirmed = window.confirm(
-        "Soll der gesamte Spielraum gelöscht werden?"
-    );
-
-    if (!confirmed) {
-        return;
-    }
-
-    await remove(
-        ref(
-            database,
-            `games/${activeRoomCode}`
-        )
-    );
-}
-
-
-function renderAll() {
-    renderHostControls();
-    renderMessage();
-    renderTips();
-    renderTrick();
-    renderHand();
-    renderScoreboard();
-}
-
-
-function renderHostControls() {
-    const host =
-        isHost();
-
-    hostPanel.hidden =
-        !host;
-
-    if (!host) {
-        return;
-    }
-
-    const status =
-        gameState?.status;
-
-    nextTrickButton.hidden =
-        status !== "trickResult";
-
-    nextRoundButton.hidden =
-        status !== "roundResult";
-
-    finishGameButton.hidden =
-        status !== "roundResult";
-
-    nextRoundSettings.hidden =
-        status !== "roundResult";
-
-    const playerCount =
-        gameState?.playerOrder?.length ??
-        getOrderedPlayers().length;
-
-    if (playerCount > 0) {
-        cardsPerPlayerInput.max =
-            String(
-                Math.floor(
-                    80 / playerCount
-                )
-            );
-    }
-}
-
-
-function renderMessage() {
-    if (!gameState) {
-        setMessage(
-            "Status",
-            "Spielzustand wird geladen …"
-        );
-
-        return;
-    }
-
-    const currentPlayerName =
-        gameScores[
-            gameState.currentPlayerId
-        ]?.name ?? "Unbekannt";
-
-    const winnerName =
-        gameScores[
-            gameState.lastWinnerId
-        ]?.name ?? "Unbekannt";
-
-    switch (gameState.status) {
-        case "tips":
-            setMessage(
-                `Runde ${gameState.roundNumber}`,
-                "Alle Spieler müssen ihren Tipp abgeben."
-            );
-            break;
-
-        case "playing":
-            setMessage(
-                `Runde ${gameState.roundNumber}`,
-                `${currentPlayerName} ist am Zug.`
-            );
-            break;
-
-        case "trickResult":
-            setMessage(
-                "Stich beendet",
-                `${winnerName} hat den Stich gewonnen.`
-            );
-            break;
-
-        case "roundResult":
-            setMessage(
-                `Runde ${gameState.roundNumber} beendet`,
-                "Die Rundenpunkte wurden berechnet."
-            );
-            break;
-
-        case "gameFinished": {
-            const scores =
-                Object.values(gameScores);
-
-            if (scores.length === 0) {
-                setMessage(
-                    "Spiel beendet",
-                    "Das Spiel wurde beendet."
-                );
-
-                break;
-            }
-
-            const highestScore =
-                Math.max(
-                    ...scores.map(
-                        player =>
-                            player.score ??
-                            0
-                    )
-                );
-
-            const winners =
-                scores
-                    .filter(
-                        player =>
-                            (
-                                player.score ??
-                                0
-                            ) === highestScore
-                    )
-                    .map(
-                        player =>
-                            player.name
-                    )
-                    .join(", ");
-
-            setMessage(
-                "Spiel beendet",
-                `Gewinner: ${winners} mit ${highestScore} Punkten.`
-            );
-            break;
-        }
-
-        default:
-            setMessage(
-                "Status",
-                "Spielzustand wird geladen …"
-            );
-    }
-}
-
-
-function renderTips() {
-    const ownScore =
-        gameScores[
-            currentUser?.uid
-        ];
-
-    const showTips =
-        gameState?.status === "tips";
-
-    tipsArea.hidden =
-        !showTips;
-
-    if (!showTips) {
-        return;
-    }
-
-    tipInput.max =
-        String(
-            gameState.cardsPerPlayer
-        );
-
-    const submitted =
-        Boolean(
-            ownScore?.tipSubmitted
-        );
-
-    tipInput.disabled =
-        submitted;
-
-    submitTipButton.disabled =
-        submitted;
-
-    if (submitted) {
-        tipInput.value =
-            String(ownScore.tip);
-
-        tipStatus.textContent =
-            "Dein Tipp wurde gespeichert.";
-    } else {
-        tipStatus.textContent =
-            "Dein Tipp fehlt noch.";
-    }
-}
-
-
-function renderTrick() {
-    let html =
-        "<h2>Aktueller Stich</h2>";
-
-    const trick =
-        Array.isArray(
-            gameState?.currentTrick
-        )
-            ? gameState.currentTrick
-            : [];
-
-    if (gameState?.leadColor) {
-        html += `
-            <p>
-                Stichfarbe:
-                <b>${escapeHtml(gameState.leadColor)}</b>
-            </p>
-        `;
-    }
-
-    if (trick.length === 0) {
-        html += `
-            <p>
-                Noch keine Karte in diesem Stich.
-            </p>
-        `;
-    }
-
-    for (const entry of trick) {
-        const playerName =
-            gameScores[
-                entry.playerId
-            ]?.name ?? "Unbekannt";
-
-        html += `
-            <p>
-                ${escapeHtml(playerName)}:
-                <b>
-                    ${escapeHtml(entry.card.color)}
-                    ${entry.card.value}
-                </b>
-            </p>
-        `;
-    }
-
-    trickArea.innerHTML =
-        html;
-}
-
-
-function renderHand() {
-    let html =
-        "<h2>Deine Hand</h2>";
-
-    const cards =
-        objectToCards(ownHand);
-
-    if (cards.length === 0) {
-        html += `
-            <p>
-                Du hast keine Karten mehr.
-            </p>
-        `;
-
-        gameArea.innerHTML =
-            html;
-
-        return;
-    }
-
-    const ownTurn =
-        gameState?.status ===
-            "playing" &&
-        gameState.currentPlayerId ===
-            currentUser.uid;
-
-    for (const card of cards) {
-        const legal =
-            canPlayCard(
-                cards,
-                card,
-                gameState?.leadColor
-            );
-
-        const disabled =
-            !ownTurn ||
-            !legal ||
-            playRequestPending;
-
-        let title = "";
-
-        if (!ownTurn) {
-            title =
-                "Du bist nicht am Zug.";
-        } else if (!legal) {
-            title =
-                `Du musst ${gameState.leadColor} bedienen.`;
-        }
-
-        html += `
-            <button
-                type="button"
-                class="card card-${card.color.toLowerCase()}"
-                data-card-id="${escapeHtml(card.id)}"
-                ${disabled ? "disabled" : ""}
-                title="${escapeHtml(title)}">
-                ${escapeHtml(card.color)}
-                ${card.value}
-            </button>
-        `;
-    }
-
-    gameArea.innerHTML =
-        html;
-
-    gameArea
-        .querySelectorAll(
-            "[data-card-id]"
-        )
-        .forEach(button => {
-            button.addEventListener(
-                "click",
-                () => {
-                    requestPlayCard(
-                        button.dataset.cardId
-                    );
-                }
-            );
-        });
-}
-
-
-function renderScoreboard() {
-    const entries =
-        Object.entries(gameScores);
-
-    if (entries.length === 0) {
-        scoreboard.innerHTML = `
-            <h2>Punktestand</h2>
-            <p>
-                Punktestand wird geladen …
-            </p>
-        `;
-
-        return;
-    }
-
-    let html = `
-        <h2>Punktestand</h2>
-
-        <table>
-            <tr>
-                <th>Spieler</th>
-                <th>Tipp</th>
-                <th>Stiche</th>
-                <th>Rundenpunkte</th>
-                <th>Gesamt</th>
-            </tr>
-    `;
-
-    const orderedIds =
-        gameState?.playerOrder ??
-        entries.map(
-            ([playerId]) =>
-                playerId
-        );
-
-    for (const playerId of orderedIds) {
-        const player =
-            gameScores[playerId];
-
-        if (!player) {
-            continue;
-        }
-
-        html += `
-            <tr>
-                <td>${escapeHtml(player.name)}</td>
-                <td>
-                    ${player.tipSubmitted ? player.tip : "–"}
-                </td>
-                <td>${player.tricksWon ?? 0}</td>
-                <td>${player.roundPoints ?? 0}</td>
-                <td>${player.score ?? 0}</td>
-            </tr>
-        `;
-    }
-
-    html += "</table>";
-
-    scoreboard.innerHTML =
-        html;
-}
-
-
-submitTipButton.addEventListener(
-    "click",
-    submitTip
-);
-
-nextTrickButton.addEventListener(
-    "click",
-    continueAfterTrick
-);
-
-nextRoundButton.addEventListener(
-    "click",
-    startNextRound
-);
-
-finishGameButton.addEventListener(
-    "click",
-    finishGame
-);
-
-deleteRoomButton.addEventListener(
-    "click",
-    deleteRoom
-);
-
-backButton.addEventListener(
-    "click",
-    () => {
-        window.location.href =
-            "./index.html";
-    }
-);
 
 
 onAuthStateChanged(
@@ -1839,31 +1051,24 @@ onAuthStateChanged(
             currentUser = user;
 
             try {
-                await loadGame();
+                await initializePage();
             } catch (error) {
                 console.error(error);
 
-                setFirebaseStatus(
-                    `Spiel konnte nicht geladen werden: ${error.message}`
-                );
+                firebaseStatus.textContent =
+                    `Spiel konnte nicht geladen werden: ${error.message}`;
             }
 
             return;
         }
 
         try {
-            setFirebaseStatus(
-                "Anonyme Anmeldung läuft …"
-            );
-
             await signInAnonymously(auth);
-
         } catch (error) {
             console.error(error);
 
-            setFirebaseStatus(
-                `Anonyme Anmeldung fehlgeschlagen: ${error.message}`
-            );
+            firebaseStatus.textContent =
+                `Anmeldung fehlgeschlagen: ${error.message}`;
         }
     }
 );

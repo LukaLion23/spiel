@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0">
+
+    <title>Kartenspiel – Tipp</title>
+
+    <link
+        rel="stylesheet"
+        href="./style.css?v=40">
+</head>
+
+<body>
+
+    <h1>Dein Tipp</h1>
+
+    <main class="container">
+
+        <section class="panel">
+            <h2 id="roundTitle">
+                Runde wird geladen …
+            </h2>
+
+            <p id="playerDisplay"></p>
+
+            <p id="firebaseStatus">
+                Karten werden geladen …
+            </p>
+        </section>
+
+        <section
+            class="panel"
+            id="tipPanel">
+
+            <h2>Wie viele Stiche schaffst du?</h2>
+
+            <label for="tipInput">
+                Dein Tipp
+            </label>
+
+            <input
+                id="tipInput"
+                type="number"
+                min="0"
+                step="1"
+                value="0">
+
+            <button
+                id="submitTipButton"
+                type="button">
+                Tipp verbindlich speichern
+            </button>
+
+            <p id="tipStatus"></p>
+
+        </section>
+
+        <section class="panel">
+            <h2>Deine Karten</h2>
+
+            <div
+                class="cards-grid"
+                id="handArea">
+
+                <p>
+                    Handkarten werden geladen …
+                </p>
+
+            </div>
+        </section>
+
+        <section class="panel">
+            <h2>Tipps abgegeben</h2>
+
+            <div id="tipProgress"></div>
+        </section>
+
+    </main>
+
+    <script type="module">
+        import("./tip.js?v=40")
+            .catch(error => {
+                console.error(error);
+
+                document.getElementById(
+                    "firebaseStatus"
+                ).textContent =
+                    "Tippseite konnte nicht geladen werden: " +
+                    error.message;
+            });
+    </script>
+
+</body>
+</html>

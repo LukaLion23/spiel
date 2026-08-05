@@ -1,0 +1,56 @@
+NEUER SPIELABLAUF
+
+Dateien umbenennen und ins GitHub-Repository kopieren:
+
+index.txt            -> index.html
+lobby.txt            -> lobby.js
+round.txt            -> round.html
+round_js.txt         -> round.js
+tip.txt              -> tip.html
+tip_js.txt           -> tip.js
+game.txt             -> game.html
+game_js.txt          -> game.js
+firebase_common.txt  -> firebase-common.js
+style.txt            -> style.css
+
+In Firebase unter Realtime Database > Regeln:
+Inhalt aus firebase_regeln.txt einsetzen und veröffentlichen.
+
+Die alten Dateien firebase.js und script.js werden nicht mehr benötigt.
+
+ABLAUF
+
+1. index.html:
+   Raum erstellen, beitreten und Warteraum.
+
+2. Der Spielleiter klickt:
+   "Alle sind da – weiter".
+
+3. round.html:
+   Nur der Spielleiter sieht die Eingabe für Karten pro Spieler.
+   Alle anderen sehen einen Wartebildschirm.
+
+4. tip.html:
+   Jeder sieht seine Handkarten und gibt seinen Tipp ab.
+   Die tatsächlichen Tipps der anderen werden hier noch nicht gezeigt.
+
+5. Sobald alle Tipps gespeichert sind:
+   Alle Geräte wechseln automatisch auf game.html.
+
+6. game.html:
+   Jeder sieht seine eigenen Karten, alle Tipps, bisherige Stiche,
+   den aktuellen Stich, die Stichfarbe und den Spieler am Zug.
+
+7. Nach der Runde:
+   Jeder sieht 5 Sekunden lang sein persönliches Ergebnis:
+   Tipp, geschaffte Stiche, Rundenpunkte und Gesamtpunkte.
+
+8. Nach 5 Sekunden:
+   Alle wechseln automatisch zurück auf round.html.
+   Nur der Spielleiter sieht die Eingabe für die nächste Kartenanzahl.
+
+WICHTIG
+
+Alle Dateien müssen im selben Ordner liegen.
+Nach dem Hochladen GitHub Pages mit Strg + F5 aktualisieren.
+Die Versionsnummer ?v=40 kann bei späteren Änderungen erhöht werden.

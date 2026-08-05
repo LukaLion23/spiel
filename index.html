@@ -11,10 +11,10 @@
 
     <link
         rel="stylesheet"
-        href="./style.css?v=30">
+        href="./style.css?v=40">
 </head>
 
-<body>
+<body class="entry-page">
 
     <h1>Online-Kartenspiel</h1>
 
@@ -26,30 +26,30 @@
 
             <h2>Spiel erstellen oder beitreten</h2>
 
-            <label for="onlinePlayerName">
-                Dein Name:
+            <label for="playerName">
+                Dein Name
             </label>
 
             <input
-                id="onlinePlayerName"
+                id="playerName"
                 type="text"
                 maxlength="30"
                 placeholder="Spielername"
                 autocomplete="off">
 
-            <div class="button-row">
-                <button
-                    id="createRoomButton"
-                    type="button"
-                    disabled>
-                    Neues Spiel erstellen
-                </button>
+            <button
+                id="createRoomButton"
+                type="button"
+                disabled>
+                Neues Spiel erstellen
+            </button>
+
+            <div class="section-divider">
+                oder
             </div>
 
-            <hr>
-
             <label for="roomCodeInput">
-                Spielcode:
+                Spielcode
             </label>
 
             <input
@@ -68,84 +68,62 @@
             </button>
 
             <p id="firebaseStatus">
-                Verbindung zu Firebase wird hergestellt …
+                Verbindung wird hergestellt …
             </p>
 
         </section>
 
         <section
             class="panel"
-            id="roomPanel"
+            id="lobbyPanel"
             hidden>
 
             <h2>Warteraum</h2>
 
             <p id="activeRoomCode"></p>
 
-            <h3>Spieler im Raum</h3>
+            <h3>Spieler</h3>
 
-            <ul id="onlinePlayerList"></ul>
+            <ul id="playerList"></ul>
 
-            <p id="lobbyStatus">
-                Warte auf weitere Spieler …
-            </p>
+            <p id="lobbyStatus"></p>
 
             <div
-                id="hostPanel"
+                id="hostControls"
                 hidden>
 
-                <hr>
-
-                <h3>Spielleiter</h3>
-
-                <label for="cardsPerPlayer">
-                    Karten pro Spieler:
-                </label>
-
-                <input
-                    id="cardsPerPlayer"
-                    type="number"
-                    min="1"
-                    max="40"
-                    step="1"
-                    value="5">
-
                 <button
-                    id="startGameButton"
+                    id="prepareGameButton"
                     type="button">
-                    Spiel starten
+                    Alle sind da – weiter
                 </button>
 
             </div>
 
-            <div class="button-row">
-                <button
-                    id="leaveRoomButton"
-                    type="button">
-                    Raum verlassen
-                </button>
-            </div>
+            <button
+                id="leaveRoomButton"
+                class="secondary-button"
+                type="button">
+                Raum verlassen
+            </button>
 
         </section>
 
     </main>
 
     <script type="module">
-        const statusElement =
-            document.getElementById("firebaseStatus");
-
-        if (statusElement) {
-            statusElement.textContent =
-                "Eintrittsseite wird geladen …";
-        }
-
-        import("./lobby.js?v=30")
+        import("./lobby.js?v=40")
             .catch(error => {
                 console.error(error);
 
-                if (statusElement) {
-                    statusElement.textContent =
-                        "lobby.js konnte nicht geladen werden: " +
+                const status =
+                    document.getElementById(
+                        "firebaseStatus"
+                    );
+
+                if (status) {
+                    status.textContent =
+                        "Lobby konnte nicht geladen werden: " +
                         error.message;
                 }
             });

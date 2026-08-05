@@ -11,7 +11,7 @@
 
     <link
         rel="stylesheet"
-        href="./style.css?v=30">
+        href="./style.css?v=40">
 </head>
 
 <body>
@@ -20,184 +20,139 @@
 
     <main class="container">
 
-        <section
-            class="panel"
-            id="gameHeader">
+        <section class="panel game-status-bar">
 
-            <h2>Spielraum</h2>
+            <div>
+                <span class="status-label">
+                    Runde
+                </span>
 
-            <p id="activeRoomCode"></p>
-
-            <p id="playerDisplay"></p>
-
-            <p id="firebaseStatus">
-                Spiel wird geladen …
-            </p>
-
-        </section>
-
-        <section
-            class="panel"
-            id="hostPanel"
-            hidden>
-
-            <h2>Spielleiter</h2>
-
-            <div
-                id="nextRoundSettings"
-                hidden>
-
-                <label for="cardsPerPlayer">
-                    Karten pro Spieler in der nächsten Runde:
-                </label>
-
-                <input
-                    id="cardsPerPlayer"
-                    type="number"
-                    min="1"
-                    max="40"
-                    step="1"
-                    value="5">
-
+                <strong id="roundNumber">
+                    –
+                </strong>
             </div>
 
-            <div class="button-row">
+            <div>
+                <span class="status-label">
+                    Am Zug
+                </span>
 
-                <button
-                    id="nextTrickButton"
-                    type="button"
-                    hidden>
-                    Nächster Stich
-                </button>
-
-                <button
-                    id="nextRoundButton"
-                    type="button"
-                    hidden>
-                    Nächste Runde starten
-                </button>
-
-                <button
-                    id="finishGameButton"
-                    type="button"
-                    hidden>
-                    Spiel beenden
-                </button>
-
-                <button
-                    id="deleteRoomButton"
-                    type="button">
-                    Spielraum löschen
-                </button>
-
+                <strong id="currentPlayer">
+                    Wird geladen …
+                </strong>
             </div>
 
-        </section>
+            <div>
+                <span class="status-label">
+                    Stichfarbe
+                </span>
 
-        <section
-            class="panel"
-            id="messageArea">
-
-            <h2>Status</h2>
-
-            <p>
-                Spielzustand wird geladen …
-            </p>
-
-        </section>
-
-        <section
-            class="panel"
-            id="tipsArea"
-            hidden>
-
-            <h2>Tipp abgeben</h2>
-
-            <label for="tipInput">
-                Wie viele Stiche gewinnst du?
-            </label>
-
-            <input
-                id="tipInput"
-                type="number"
-                min="0"
-                step="1"
-                value="0">
-
-            <button
-                id="submitTipButton"
-                type="button">
-                Tipp speichern
-            </button>
-
-            <p id="tipStatus"></p>
-
-        </section>
-
-        <section
-            class="panel"
-            id="trickArea">
-
-            <h2>Aktueller Stich</h2>
-
-            <p>
-                Noch keine Karte gespielt.
-            </p>
-
-        </section>
-
-        <section
-            class="panel"
-            id="game">
-
-            <h2>Deine Hand</h2>
-
-            <p>
-                Handkarten werden geladen …
-            </p>
-
-        </section>
-
-        <section
-            class="panel"
-            id="scoreboard">
-
-            <h2>Punktestand</h2>
-
-            <p>
-                Punktestand wird geladen …
-            </p>
+                <strong id="leadColor">
+                    –
+                </strong>
+            </div>
 
         </section>
 
         <section class="panel">
-            <button
-                id="backButton"
-                type="button">
-                Zur Eintrittsseite
-            </button>
+            <h2>Tipps und Stiche</h2>
+
+            <div id="playerOverview"></div>
         </section>
+
+        <section class="panel">
+            <h2>Aktueller Stich</h2>
+
+            <div
+                class="played-cards"
+                id="trickArea">
+
+                <p>
+                    Noch keine Karte gespielt.
+                </p>
+
+            </div>
+
+            <p
+                class="trick-winner"
+                id="trickWinner">
+            </p>
+        </section>
+
+        <section class="panel">
+            <h2>Deine Karten</h2>
+
+            <p id="handHint"></p>
+
+            <div
+                class="cards-grid"
+                id="handArea">
+            </div>
+        </section>
+
+        <p
+            id="firebaseStatus"
+            class="connection-status">
+
+            Spiel wird geladen …
+
+        </p>
 
     </main>
 
+    <div
+        class="result-overlay"
+        id="resultOverlay"
+        hidden>
+
+        <div class="result-dialog">
+
+            <div class="result-icon">
+                ✓
+            </div>
+
+            <h2>Runde beendet</h2>
+
+            <p>
+                Dein Tipp:
+                <strong id="resultTip">0</strong>
+            </p>
+
+            <p>
+                Geschaffte Stiche:
+                <strong id="resultTricks">0</strong>
+            </p>
+
+            <p class="result-points">
+                Rundenpunkte:
+                <strong id="resultPoints">0</strong>
+            </p>
+
+            <p>
+                Gesamtpunkte:
+                <strong id="resultTotal">0</strong>
+            </p>
+
+            <p class="countdown-text">
+                Nächste Runde in
+                <strong id="resultCountdown">5</strong>
+                Sekunden …
+            </p>
+
+        </div>
+
+    </div>
+
     <script type="module">
-        const statusElement =
-            document.getElementById("firebaseStatus");
-
-        if (statusElement) {
-            statusElement.textContent =
-                "Spielseite wird geladen …";
-        }
-
-        import("./game.js?v=30")
+        import("./game.js?v=40")
             .catch(error => {
                 console.error(error);
 
-                if (statusElement) {
-                    statusElement.textContent =
-                        "game.js konnte nicht geladen werden: " +
-                        error.message;
-                }
+                document.getElementById(
+                    "firebaseStatus"
+                ).textContent =
+                    "Spielseite konnte nicht geladen werden: " +
+                    error.message;
             });
     </script>
 

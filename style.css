@@ -704,3 +704,356 @@ tr:last-child td {
         animation: none !important;
     }
 }
+
+
+/* =========================================================
+   Mehrseitiger Spielablauf
+   ========================================================= */
+
+.section-divider {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 22px 0;
+    color: var(--text-muted);
+    font-weight: 700;
+}
+
+.section-divider::before,
+.section-divider::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+}
+
+.secondary-button {
+    color: #33475d;
+    background: #e7ecf2;
+    box-shadow: none;
+}
+
+.secondary-button:hover:not(:disabled) {
+    color: #1f3043;
+    background: #d7e0e9;
+}
+
+.step-badge {
+    display: inline-block;
+    margin-bottom: 12px;
+    padding: 6px 10px;
+    color: #1f4f88;
+    background: #e4efff;
+    border: 1px solid #c6daf7;
+    border-radius: 999px;
+    font-size: 0.84rem;
+    font-weight: 800;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+}
+
+.round-setup-card {
+    max-width: 680px;
+    margin-inline: auto;
+    text-align: center;
+    border-top: 5px solid var(--primary);
+}
+
+.round-setup-card label {
+    text-align: left;
+}
+
+.round-setup-card input {
+    max-width: 180px;
+    text-align: center;
+    font-size: 1.35rem;
+    font-weight: 800;
+}
+
+.waiting-panel {
+    max-width: 680px;
+    margin-inline: auto;
+    padding-block: 44px;
+    text-align: center;
+}
+
+.waiting-spinner {
+    width: 54px;
+    height: 54px;
+    margin: 0 auto 22px;
+    border: 6px solid #dce5ef;
+    border-top-color: var(--primary);
+    border-radius: 50%;
+    animation: waiting-spin 1s linear infinite;
+}
+
+@keyframes waiting-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.cards-grid {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 12px;
+}
+
+.card {
+    position: relative;
+    display: inline-flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: flex-start;
+    min-width: 105px;
+    min-height: 145px;
+    padding: 15px;
+    color: #fff;
+    border: 2px solid rgba(255, 255, 255, 0.58);
+    border-radius: 15px;
+    box-shadow: 0 8px 17px rgba(24, 38, 53, 0.18);
+    overflow: hidden;
+}
+
+.card::after {
+    content: "";
+    position: absolute;
+    inset: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.38);
+    border-radius: 10px;
+    pointer-events: none;
+}
+
+.card span,
+.card strong {
+    position: relative;
+    z-index: 1;
+}
+
+.card strong {
+    align-self: flex-end;
+    font-size: 2rem;
+    line-height: 1;
+}
+
+.display-card {
+    cursor: default;
+}
+
+.progress-row {
+    display: grid;
+    gap: 12px;
+}
+
+progress {
+    width: 100%;
+    height: 16px;
+    accent-color: var(--primary);
+}
+
+.game-status-bar {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    text-align: center;
+}
+
+.game-status-bar > div {
+    padding: 14px;
+    background: var(--surface-muted);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-small);
+}
+
+.status-label {
+    display: block;
+    margin-bottom: 5px;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    font-weight: 750;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.player-overview-grid {
+    display: grid;
+    grid-template-columns:
+        repeat(auto-fit, minmax(170px, 1fr));
+    gap: 12px;
+}
+
+.player-stat {
+    padding: 15px;
+    background: var(--surface-muted);
+    border: 2px solid transparent;
+    border-radius: var(--radius-medium);
+}
+
+.player-stat.is-current {
+    background: #edf4ff;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 4px rgba(41, 86, 163, 0.08);
+}
+
+.player-stat h3 {
+    margin: 0 0 12px;
+}
+
+.player-stat > div {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 6px 0;
+    border-top: 1px solid var(--border);
+}
+
+.played-cards {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+}
+
+.played-card-wrap {
+    text-align: center;
+}
+
+.played-card-wrap > span {
+    display: block;
+    margin-bottom: 7px;
+    font-weight: 750;
+}
+
+.trick-winner {
+    margin-top: 18px;
+    color: var(--success);
+    font-size: 1.15rem;
+    font-weight: 850;
+}
+
+.connection-status {
+    text-align: center;
+    color: var(--text-muted);
+}
+
+.result-overlay {
+    position: fixed;
+    z-index: 1000;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    padding: 20px;
+    background: rgba(13, 25, 39, 0.68);
+    backdrop-filter: blur(8px);
+}
+
+.result-overlay[hidden] {
+    display: none;
+}
+
+.result-dialog {
+    width: min(460px, 100%);
+    padding: 30px;
+    text-align: center;
+    background: #fff;
+    border-radius: 24px;
+    box-shadow: 0 24px 70px rgba(0, 0, 0, 0.3);
+    animation: result-pop 260ms ease-out;
+}
+
+@keyframes result-pop {
+    from {
+        opacity: 0;
+        transform: scale(0.9) translateY(18px);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+.result-icon {
+    display: grid;
+    place-items: center;
+    width: 64px;
+    height: 64px;
+    margin: 0 auto 16px;
+    color: #fff;
+    background: var(--success);
+    border-radius: 50%;
+    font-size: 2rem;
+    font-weight: 900;
+}
+
+.result-dialog h2 {
+    margin-top: 0;
+}
+
+.result-dialog p {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+}
+
+.result-dialog .result-points {
+    color: var(--primary);
+    font-size: 1.2rem;
+    font-weight: 850;
+}
+
+.result-dialog .countdown-text {
+    display: block;
+    margin-top: 18px;
+    border-bottom: 0;
+    color: var(--text-muted);
+}
+
+.winner-text {
+    padding: 18px;
+    text-align: center;
+    background: #edf8f2;
+    border: 1px solid #cce9d8;
+    border-radius: var(--radius-medium);
+    font-size: 1.15rem;
+}
+
+.ranking-list {
+    margin: 18px 0 0;
+    padding: 0;
+    list-style-position: inside;
+}
+
+.ranking-list li {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px;
+    border-bottom: 1px solid var(--border);
+}
+
+@media (max-width: 650px) {
+    .game-status-bar {
+        grid-template-columns: 1fr;
+    }
+
+    .cards-grid {
+        justify-content: center;
+    }
+
+    .card {
+        min-width: 88px;
+        min-height: 125px;
+        padding: 12px;
+    }
+
+    .card strong {
+        font-size: 1.65rem;
+    }
+
+    .result-dialog {
+        padding: 24px 18px;
+    }
+}

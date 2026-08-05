@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0">
+
+    <title>Kartenspiel – Runde vorbereiten</title>
+
+    <link
+        rel="stylesheet"
+        href="./style.css?v=40">
+</head>
+
+<body>
+
+    <h1>Rundenvorbereitung</h1>
+
+    <main class="container">
+
+        <section class="panel">
+            <h2>Spielraum</h2>
+
+            <p id="activeRoomCode"></p>
+
+            <p id="firebaseStatus">
+                Rundenvorbereitung wird geladen …
+            </p>
+        </section>
+
+        <section
+            class="panel round-setup-card"
+            id="hostSetup"
+            hidden>
+
+            <div class="step-badge">
+                Spielleiter
+            </div>
+
+            <h2 id="roundTitle">
+                Nächste Runde vorbereiten
+            </h2>
+
+            <p>
+                Wie viele Karten soll jeder Spieler
+                in dieser Runde erhalten?
+            </p>
+
+            <label for="cardsPerPlayer">
+                Karten pro Spieler
+            </label>
+
+            <input
+                id="cardsPerPlayer"
+                type="number"
+                min="1"
+                max="40"
+                step="1"
+                value="5">
+
+            <p id="cardLimitInfo"></p>
+
+            <button
+                id="startRoundButton"
+                type="button">
+                Karten austeilen und Tipps starten
+            </button>
+
+            <button
+                id="finishGameButton"
+                class="secondary-button"
+                type="button">
+                Spiel beenden
+            </button>
+
+        </section>
+
+        <section
+            class="panel waiting-panel"
+            id="playerWaiting"
+            hidden>
+
+            <div class="waiting-spinner"></div>
+
+            <h2>Warte auf den Spielleiter</h2>
+
+            <p>
+                Der Spielleiter legt gerade fest,
+                wie viele Karten in der nächsten Runde
+                gespielt werden.
+            </p>
+
+        </section>
+
+        <section
+            class="panel"
+            id="lastRoundPanel"
+            hidden>
+
+            <h2>Letzte Runde</h2>
+
+            <div id="lastRoundScores"></div>
+
+        </section>
+
+        <section
+            class="panel"
+            id="finalResultPanel"
+            hidden>
+
+            <h2>Spiel beendet</h2>
+
+            <div id="finalResult"></div>
+
+        </section>
+
+    </main>
+
+    <script type="module">
+        import("./round.js?v=40")
+            .catch(error => {
+                console.error(error);
+
+                document.getElementById(
+                    "firebaseStatus"
+                ).textContent =
+                    "Rundenseite konnte nicht geladen werden: " +
+                    error.message;
+            });
+    </script>
+
+</body>
+</html>
