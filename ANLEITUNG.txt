@@ -101,3 +101,23 @@ WICHTIG:
 Die neuen Regeln aus firebase_regeln.txt müssen erneut in Firebase unter
 Realtime Database > Regeln eingefügt und veröffentlicht werden.
 Neue Räume werden erst danach in der Raumliste sichtbar.
+
+
+UPDATE V54
+
+- Offene Räume werden über eine Firebase-Live-Verbindung synchronisiert.
+- Der Spielleiter aktualisiert seinen offenen Raum alle 15 Sekunden.
+- Beim Schließen des Spielleiter-Browsers wird der öffentliche
+  Raumeintrag durch Firebase automatisch entfernt.
+- Verwaiste Lobbyräume werden nach ungefähr zwei Minuten zusätzlich
+  aus publicRooms und games bereinigt.
+- Der Aktualisieren-Button liest die Raumliste ausdrücklich neu ein.
+- Nach dem Erstellen wird geprüft, ob der Raum im gemeinsamen
+  Raumverzeichnis wirklich gespeichert wurde.
+- Auf der Startseite steht unten "Version 54".
+  Handy und Laptop müssen beide diese Versionsnummer anzeigen.
+- Cache-Version: ?v=54
+
+WICHTIG:
+Die Regeln aus firebase_regeln.txt müssen vollständig in
+Firebase > Realtime Database > Regeln eingesetzt und veröffentlicht werden.

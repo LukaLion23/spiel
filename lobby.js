@@ -5,10 +5,12 @@ import {
 
 import {
     get,
+    onDisconnect,
     onValue,
     ref,
     remove,
     runTransaction,
+    serverTimestamp,
     set,
     update
 } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-database.js";
@@ -23,7 +25,11 @@ import {
     orderedPlayers,
     redirectToStatus,
     saveRoomSession
-} from "./firebase-common.js?v=53";
+} from "./firebase-common.js?v=54";
+
+
+const HEARTBEAT_INTERVAL_MS = 15000;
+const STALE_ROOM_DELETE_AFTER_MS = 120000;
 
 
 let currentUser = null;
@@ -35,8 +41,17 @@ let availableRooms = {};
 let stopMetaListener = null;
 let stopPlayersListener = null;
 let stopAvailableRoomsListener = null;
+let stopConnectionListener = null;
+
+let heartbeatTimer = null;
+let presenceRoomCode = null;
+let publicRoomDisconnect = null;
 
 let lastPublishedPlayerCount = null;
+let heartbeatRunning = false;
+
+const cleanupInProgress =
+    new Set();
 
 
 const entryPanel =
@@ -127,6 +142,7 @@ function validatePlayerName() {
         alert(
             "Der Spielername darf höchstens 30 Zeichen lang sein."
         );
+
         playerNameInput.focus();
         return null;
     }
@@ -142,6 +158,7 @@ function validateRoomName() {
         alert(
             "Bitte gib dem Spielraum einen Namen."
         );
+
         roomNameInput.focus();
         return null;
     }
@@ -150,6 +167,7 @@ function validateRoomName() {
         alert(
             "Der Raumname darf höchstens 40 Zeichen lang sein."
         );
+
         roomNameInput.focus();
         return null;
     }
@@ -167,6 +185,7 @@ function validateRoomName() {
         alert(
             "Ein offener Spielraum verwendet bereits diesen Namen."
         );
+
         roomNameInput.focus();
         return null;
     }
@@ -218,6 +237,7 @@ function startAvailableRoomsListener() {
                 snapshot.val() ?? {};
 
             renderAvailableRooms();
+            void cleanupStaleRooms();
         },
         error => {
             console.error(error);
@@ -227,6 +247,55 @@ function startAvailableRoomsListener() {
                 `Spielräume konnten nicht geladen werden: ${error.message}`;
         }
     );
+}
+
+
+async function refreshAvailableRooms() {
+    refreshRoomsButton.disabled = true;
+
+    try {
+        const snapshot = await get(
+            ref(
+                database,
+                "publicRooms"
+            )
+        );
+
+        availableRooms =
+            snapshot.val() ?? {};
+
+        renderAvailableRooms();
+        await cleanupStaleRooms();
+
+    } catch (error) {
+        console.error(error);
+
+        roomListStatus.hidden = false;
+        roomListStatus.textContent =
+            `Aktualisierung fehlgeschlagen: ${error.message}`;
+
+    } finally {
+        refreshRoomsButton.disabled = false;
+    }
+}
+
+
+function getRoomTimestamp(room) {
+    const lastSeenAt =
+        Number(room?.lastSeenAt);
+
+    if (Number.isFinite(lastSeenAt)) {
+        return lastSeenAt;
+    }
+
+    const createdAt =
+        Number(room?.createdAt);
+
+    if (Number.isFinite(createdAt)) {
+        return createdAt;
+    }
+
+    return 0;
 }
 
 
@@ -243,8 +312,8 @@ function renderAvailableRooms() {
             )
             .sort(
                 ([, roomA], [, roomB]) =>
-                    (roomB.createdAt ?? 0) -
-                    (roomA.createdAt ?? 0)
+                    getRoomTimestamp(roomB) -
+                    getRoomTimestamp(roomA)
             );
 
     roomListStatus.hidden =
@@ -253,6 +322,7 @@ function renderAvailableRooms() {
     if (roomEntries.length === 0) {
         roomListStatus.textContent =
             "Aktuell gibt es keinen offenen Spielraum.";
+
         return;
     }
 
@@ -271,11 +341,7 @@ function renderAvailableRooms() {
         const playerCountText =
             Number.isInteger(playerCount) &&
             playerCount >= 1
-                ? `${playerCount} ${
-                    playerCount === 1
-                        ? "Spieler"
-                        : "Spieler"
-                }`
+                ? `${playerCount} Spieler`
                 : "Offen";
 
         button.innerHTML = `
@@ -286,13 +352,18 @@ function renderAvailableRooms() {
 
                 <small>
                     Spielleiter:
-                    ${escapeHtml(room.hostName ?? "Unbekannt")}
+                    ${escapeHtml(
+                        room.hostName ??
+                        "Unbekannt"
+                    )}
                 </small>
             </span>
 
             <span class="room-entry-side">
                 <small>
-                    ${escapeHtml(playerCountText)}
+                    ${escapeHtml(
+                        playerCountText
+                    )}
                 </small>
 
                 <span class="join-room-label">
@@ -304,6 +375,68 @@ function renderAvailableRooms() {
         availableRoomList.appendChild(
             button
         );
+    }
+}
+
+
+async function cleanupStaleRooms() {
+    const now = Date.now();
+
+    const staleRoomCodes =
+        Object.entries(availableRooms)
+            .filter(([, room]) => {
+                const timestamp =
+                    getRoomTimestamp(room);
+
+                return (
+                    timestamp === 0 ||
+                    now - timestamp >
+                        STALE_ROOM_DELETE_AFTER_MS
+                );
+            })
+            .map(([roomCode]) =>
+                cleanRoomCode(roomCode)
+            )
+            .filter(roomCode =>
+                roomCode.length === 6
+            );
+
+    for (const roomCode of staleRoomCodes) {
+        if (cleanupInProgress.has(roomCode)) {
+            continue;
+        }
+
+        cleanupInProgress.add(roomCode);
+
+        try {
+            await update(
+                ref(database),
+                {
+                    [`publicRooms/${roomCode}`]:
+                        null,
+
+                    [`games/${roomCode}`]:
+                        null
+                }
+            );
+
+        } catch (error) {
+            /*
+             * Eine Löschung kann abgelehnt werden,
+             * wenn der Raum serverseitig noch nicht
+             * lange genug verwaist ist. Dann wird sie
+             * beim nächsten Listener-Aufruf erneut versucht.
+             */
+            console.debug(
+                `Verwaister Raum ${roomCode} wurde noch nicht gelöscht:`,
+                error.message
+            );
+
+        } finally {
+            cleanupInProgress.delete(
+                roomCode
+            );
+        }
     }
 }
 
@@ -331,6 +464,9 @@ async function createRoom() {
             const roomCode =
                 generateRoomCode();
 
+            const createdAt =
+                Date.now();
+
             const metaReference =
                 ref(
                     database,
@@ -353,8 +489,9 @@ async function createRoom() {
                             roomName,
                             status:
                                 "lobby",
-                            createdAt:
-                                Date.now()
+                            createdAt,
+                            lastSeenAt:
+                                createdAt
                         };
                     },
                     {
@@ -375,8 +512,11 @@ async function createRoom() {
                                 name:
                                     playerName,
                                 joinedAt:
-                                    Date.now()
+                                    createdAt
                             },
+
+                        [`games/${roomCode}/meta/lastSeenAt`]:
+                            serverTimestamp(),
 
                         [`publicRooms/${roomCode}`]:
                             {
@@ -385,20 +525,43 @@ async function createRoom() {
                                 hostName:
                                     playerName,
                                 roomName,
-                                createdAt:
-                                    Date.now(),
+                                createdAt,
+                                lastSeenAt:
+                                    serverTimestamp(),
                                 playerCount:
                                     1
                             }
                     }
                 );
 
+                /*
+                 * Sicherstellen, dass der Raum tatsächlich
+                 * im gemeinsamen Verzeichnis angekommen ist.
+                 */
+                const publicSnapshot =
+                    await get(
+                        ref(
+                            database,
+                            `publicRooms/${roomCode}`
+                        )
+                    );
+
+                if (!publicSnapshot.exists()) {
+                    throw new Error(
+                        "Der Spielraum konnte nicht veröffentlicht werden."
+                    );
+                }
+
             } catch (error) {
-                await remove(
-                    ref(
-                        database,
-                        `games/${roomCode}`
-                    )
+                await update(
+                    ref(database),
+                    {
+                        [`games/${roomCode}`]:
+                            null,
+
+                        [`publicRooms/${roomCode}`]:
+                            null
+                    }
                 );
 
                 throw error;
@@ -451,18 +614,36 @@ async function joinRoom(roomCode) {
     setStatus("Spielraum wird geöffnet …");
 
     try {
-        const metaSnapshot =
-            await get(
+        const [
+            metaSnapshot,
+            publicRoomSnapshot
+        ] = await Promise.all([
+            get(
                 ref(
                     database,
                     `games/${roomCode}/meta`
                 )
-            );
+            ),
+            get(
+                ref(
+                    database,
+                    `publicRooms/${roomCode}`
+                )
+            )
+        ]);
 
-        if (!metaSnapshot.exists()) {
+        if (
+            !metaSnapshot.exists() ||
+            !publicRoomSnapshot.exists()
+        ) {
             alert(
                 "Dieser Spielraum existiert nicht mehr."
             );
+
+            availableRooms[roomCode] =
+                undefined;
+
+            renderAvailableRooms();
             return;
         }
 
@@ -473,6 +654,7 @@ async function joinRoom(roomCode) {
             alert(
                 "Dieses Spiel wurde bereits gestartet."
             );
+
             return;
         }
 
@@ -503,6 +685,7 @@ async function joinRoom(roomCode) {
             alert(
                 "Der Spielraum ist bereits voll."
             );
+
             return;
         }
 
@@ -510,14 +693,19 @@ async function joinRoom(roomCode) {
             otherPlayers.some(
                 player =>
                     String(player.name)
-                        .toLocaleLowerCase("de-DE") ===
-                    playerName.toLocaleLowerCase("de-DE")
+                        .toLocaleLowerCase(
+                            "de-DE"
+                        ) ===
+                    playerName.toLocaleLowerCase(
+                        "de-DE"
+                    )
             );
 
         if (duplicateName) {
             alert(
                 "Dieser Spielername wird bereits verwendet."
             );
+
             return;
         }
 
@@ -561,6 +749,7 @@ async function enterRoom(
     playerName,
     roomName
 ) {
+    await stopHostPresence();
     stopRoomListeners();
 
     activeRoomCode = roomCode;
@@ -594,7 +783,8 @@ async function enterRoom(
                 return;
             }
 
-            roomMeta = snapshot.val();
+            roomMeta =
+                snapshot.val();
 
             activeRoomNameElement.innerHTML = `
                 Raum:
@@ -607,15 +797,31 @@ async function enterRoom(
             `;
 
             if (roomMeta.status !== "lobby") {
+                void stopHostPresence();
+
                 redirectToStatus(
                     roomMeta.status,
                     roomCode,
                     "./index.html"
                 );
+
                 return;
             }
 
+            if (isHost()) {
+                void startHostPresence();
+            } else {
+                void stopHostPresence();
+            }
+
             renderLobby();
+        },
+        error => {
+            console.error(error);
+
+            setStatus(
+                `Raumverbindung fehlgeschlagen: ${error.message}`
+            );
         }
     );
 
@@ -631,6 +837,215 @@ async function enterRoom(
             renderLobby();
         }
     );
+}
+
+
+async function startHostPresence() {
+    if (
+        !isHost() ||
+        !activeRoomCode ||
+        roomMeta?.status !== "lobby"
+    ) {
+        return;
+    }
+
+    if (
+        presenceRoomCode ===
+            activeRoomCode &&
+        heartbeatTimer &&
+        stopConnectionListener
+    ) {
+        return;
+    }
+
+    if (
+        presenceRoomCode !==
+        activeRoomCode
+    ) {
+        await stopHostPresence();
+
+        presenceRoomCode =
+            activeRoomCode;
+    }
+
+    const publicRoomReference =
+        ref(
+            database,
+            `publicRooms/${activeRoomCode}`
+        );
+
+    publicRoomDisconnect =
+        onDisconnect(
+            publicRoomReference
+        );
+
+    try {
+        await publicRoomDisconnect.remove();
+
+    } catch (error) {
+        console.error(
+            "Automatisches Entfernen des Raums konnte nicht vorbereitet werden:",
+            error
+        );
+    }
+
+    if (!stopConnectionListener) {
+        stopConnectionListener =
+            onValue(
+                ref(
+                    database,
+                    ".info/connected"
+                ),
+                snapshot => {
+                    if (
+                        snapshot.val() === true &&
+                        isHost() &&
+                        roomMeta?.status ===
+                            "lobby"
+                    ) {
+                        void registerDisconnectAndPublish();
+                    }
+                }
+            );
+    }
+
+    if (!heartbeatTimer) {
+        heartbeatTimer =
+            window.setInterval(
+                () => {
+                    void publishPublicRoom(
+                        orderedPlayers(
+                            roomPlayers
+                        ).length
+                    );
+                },
+                HEARTBEAT_INTERVAL_MS
+            );
+    }
+
+    await publishPublicRoom(
+        orderedPlayers(
+            roomPlayers
+        ).length
+    );
+}
+
+
+async function registerDisconnectAndPublish() {
+    if (
+        !isHost() ||
+        !activeRoomCode ||
+        roomMeta?.status !== "lobby"
+    ) {
+        return;
+    }
+
+    const publicRoomReference =
+        ref(
+            database,
+            `publicRooms/${activeRoomCode}`
+        );
+
+    publicRoomDisconnect =
+        onDisconnect(
+            publicRoomReference
+        );
+
+    await publicRoomDisconnect.remove();
+
+    await publishPublicRoom(
+        orderedPlayers(
+            roomPlayers
+        ).length
+    );
+}
+
+
+async function publishPublicRoom(
+    playerCount
+) {
+    if (
+        heartbeatRunning ||
+        !isHost() ||
+        !activeRoomCode ||
+        roomMeta?.status !== "lobby"
+    ) {
+        return;
+    }
+
+    heartbeatRunning = true;
+
+    try {
+        await update(
+            ref(database),
+            {
+                [`games/${activeRoomCode}/meta/lastSeenAt`]:
+                    serverTimestamp(),
+
+                [`publicRooms/${activeRoomCode}`]:
+                    {
+                        hostId:
+                            currentUser.uid,
+                        hostName:
+                            roomMeta.hostName ??
+                            getPlayerName(),
+                        roomName:
+                            roomMeta.roomName ??
+                            "Spielraum",
+                        createdAt:
+                            roomMeta.createdAt ??
+                            Date.now(),
+                        lastSeenAt:
+                            serverTimestamp(),
+                        playerCount
+                    }
+            }
+        );
+
+        lastPublishedPlayerCount =
+            playerCount;
+
+    } catch (error) {
+        console.error(
+            "Spielraum konnte nicht veröffentlicht werden:",
+            error
+        );
+
+    } finally {
+        heartbeatRunning = false;
+    }
+}
+
+
+async function stopHostPresence() {
+    if (heartbeatTimer) {
+        window.clearInterval(
+            heartbeatTimer
+        );
+
+        heartbeatTimer = null;
+    }
+
+    if (stopConnectionListener) {
+        stopConnectionListener();
+        stopConnectionListener = null;
+    }
+
+    if (publicRoomDisconnect) {
+        try {
+            await publicRoomDisconnect.cancel();
+        } catch (error) {
+            console.debug(
+                "OnDisconnect-Auftrag konnte nicht abgebrochen werden:",
+                error.message
+            );
+        }
+
+        publicRoomDisconnect = null;
+    }
+
+    presenceRoomCode = null;
+    heartbeatRunning = false;
 }
 
 
@@ -676,60 +1091,59 @@ function renderLobby() {
             ? "Es wird mindestens ein weiterer Spieler benötigt."
             : `${players.length} Spieler sind im Raum.`;
 
-    if (host) {
-        void publishRoomPlayerCount(
+    if (
+        host &&
+        roomMeta?.status === "lobby" &&
+        lastPublishedPlayerCount !==
+            players.length
+    ) {
+        void publishPublicRoom(
             players.length
         );
+    }
+
+    if (
+        host &&
+        players.length === 0
+    ) {
+        void deleteEmptyHostRoom();
     }
 }
 
 
-async function publishRoomPlayerCount(
-    playerCount
-) {
+async function deleteEmptyHostRoom() {
     if (
         !isHost() ||
-        !activeRoomCode ||
-        roomMeta?.status !== "lobby" ||
-        lastPublishedPlayerCount ===
-            playerCount
+        !activeRoomCode
     ) {
         return;
     }
 
-    lastPublishedPlayerCount =
-        playerCount;
+    const roomCode =
+        activeRoomCode;
+
+    await stopHostPresence();
 
     try {
-        await set(
-            ref(
-                database,
-                `publicRooms/${activeRoomCode}`
-            ),
+        await update(
+            ref(database),
             {
-                hostId:
-                    currentUser.uid,
-                hostName:
-                    roomMeta.hostName ??
-                    getPlayerName(),
-                roomName:
-                    roomMeta.roomName ??
-                    "Spielraum",
-                createdAt:
-                    roomMeta.createdAt ??
-                    Date.now(),
-                playerCount
+                [`games/${roomCode}`]:
+                    null,
+
+                [`publicRooms/${roomCode}`]:
+                    null
             }
         );
 
     } catch (error) {
         console.error(
-            "Spielerzahl konnte nicht veröffentlicht werden:",
+            "Leerer Raum konnte nicht gelöscht werden:",
             error
         );
-
-        lastPublishedPlayerCount = null;
     }
+
+    resetPage();
 }
 
 
@@ -745,12 +1159,15 @@ async function prepareGame() {
         alert(
             "Mindestens 2 Spieler erforderlich."
         );
+
         return;
     }
 
     prepareGameButton.disabled = true;
 
     try {
+        await stopHostPresence();
+
         await update(
             ref(database),
             {
@@ -773,6 +1190,8 @@ async function prepareGame() {
         );
 
         prepareGameButton.disabled = false;
+
+        await startHostPresence();
     }
 }
 
@@ -797,6 +1216,8 @@ async function leaveRoom() {
     }
 
     if (host) {
+        await stopHostPresence();
+
         await update(
             ref(database),
             {
@@ -807,6 +1228,7 @@ async function leaveRoom() {
                     null
             }
         );
+
     } else {
         await remove(
             ref(
@@ -833,7 +1255,8 @@ function stopRoomListeners() {
 }
 
 
-function resetPage() {
+async function resetPage() {
+    await stopHostPresence();
     stopRoomListeners();
 
     activeRoomCode = null;
@@ -912,6 +1335,7 @@ async function restoreSavedRoom() {
             savedRoomCode,
             "./index.html"
         );
+
         return;
     }
 
@@ -932,7 +1356,7 @@ createRoomButton.addEventListener(
 refreshRoomsButton.addEventListener(
     "click",
     () => {
-        renderAvailableRooms();
+        void refreshAvailableRooms();
     }
 );
 
@@ -988,9 +1412,15 @@ onAuthStateChanged(
             startAvailableRoomsListener();
 
             try {
+                await refreshAvailableRooms();
                 await restoreSavedRoom();
+
             } catch (error) {
                 console.error(error);
+
+                setStatus(
+                    `Spielräume konnten nicht vollständig geladen werden: ${error.message}`
+                );
             }
 
             return;
