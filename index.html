@@ -15,7 +15,22 @@
     <script src="script.js" defer></script>
 
     <!-- Firebase-Online-Lobby -->
-    <script type="module" src="firebase.js"></script>
+    <script type="module">
+    const status =
+        document.getElementById("firebaseStatus");
+
+    status.textContent =
+        "firebase.js wird geladen …";
+
+    import("./firebase.js?v=5")
+        .catch(error => {
+            console.error(error);
+
+            status.textContent =
+                "firebase.js konnte nicht geladen werden: " +
+                error.message;
+        });
+    </script>
 </head>
 
 <body>
