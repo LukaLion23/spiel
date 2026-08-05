@@ -63,3 +63,19 @@ UPDATE V51
   Stattdessen erhält das Feld "Aktueller Stich" einen farbigen Rahmen.
 - Beim Bewegen der Maus über eine Karte bleibt deren Farbe unverändert.
 - Die Cache-Version wurde auf ?v=51 erhöht.
+
+
+UPDATE V52
+
+- Die Gewinnerkarte behält immer ihre ursprüngliche Kartenfarbe.
+- Der Stichgewinner wird mit einem dunklen Doppelrahmen und einem
+  kleinen Hinweis "Stichgewinner" markiert.
+- Der farbige Rahmen um "Aktueller Stich" zeigt ausschließlich die
+  zuerst ausgespielte Farbe des Stichs.
+- Die Kartenfarben und Kartenrahmen wurden vereinheitlicht.
+- Hover verändert die Kartenfarbe nicht mehr.
+- Die Webseite fordert auf allen Seiten ausdrücklich den hellen Modus an.
+- Die Kartenauswertung normalisiert Farbnamen vor jeder Prüfung.
+- Rot ist als Trumpf jetzt über eine eindeutige Rangberechnung abgesichert:
+  Jede rote Karte schlägt jede gelbe, blaue oder grüne Karte.
+- Cache-Version: ?v=52

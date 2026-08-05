@@ -43,6 +43,46 @@ export const TRUMP_COLOR = "Rot";
 export const MAX_PLAYERS = 10;
 
 
+const COLOR_ALIASES = new Map([
+    ["rot", "Rot"],
+    ["red", "Rot"],
+    ["blau", "Blau"],
+    ["blue", "Blau"],
+    ["grün", "Grün"],
+    ["gruen", "Grün"],
+    ["green", "Grün"],
+    ["gelb", "Gelb"],
+    ["yellow", "Gelb"]
+]);
+
+
+export function normalizeColor(value) {
+    const normalized =
+        String(value ?? "")
+            .trim()
+            .toLocaleLowerCase("de-DE");
+
+    return COLOR_ALIASES.get(normalized) ??
+        String(value ?? "").trim();
+}
+
+
+export function getCardColorClass(color) {
+    const normalizedColor =
+        normalizeColor(color);
+
+    const classByColor = {
+        Rot: "card-rot",
+        Blau: "card-blau",
+        "Grün": "card-gruen",
+        Gelb: "card-gelb"
+    };
+
+    return classByColor[normalizedColor] ??
+        "card-unknown";
+}
+
+
 export function escapeHtml(value) {
     const characters = {
         "&": "&amp;",
@@ -257,22 +297,71 @@ export function canPlayCard(
     card,
     leadColor
 ) {
-    if (!leadColor) {
+    const normalizedLeadColor =
+        normalizeColor(leadColor);
+
+    if (!normalizedLeadColor) {
         return true;
     }
 
     const hasLeadColor =
         handCards.some(
             handCard =>
-                handCard.color ===
-                leadColor
+                normalizeColor(
+                    handCard.color
+                ) === normalizedLeadColor
         );
 
     if (!hasLeadColor) {
         return true;
     }
 
-    return card.color === leadColor;
+    return normalizeColor(card.color) ===
+        normalizedLeadColor;
+}
+
+
+function getTrickCardStrength(
+    card,
+    leadColor
+) {
+    const cardColor =
+        normalizeColor(card?.color);
+
+    const normalizedLeadColor =
+        normalizeColor(leadColor);
+
+    const cardValue =
+        Number(card?.value);
+
+    if (
+        !COLORS.includes(cardColor) ||
+        !Number.isFinite(cardValue)
+    ) {
+        return Number.NEGATIVE_INFINITY;
+    }
+
+    /*
+     * Rot ist immer Trumpf und schlägt jede andere Farbe.
+     * Unter mehreren roten Karten gewinnt die höchste Zahl.
+     */
+    if (cardColor === TRUMP_COLOR) {
+        return 2000 + cardValue;
+    }
+
+    /*
+     * Gibt es keinen roten Trumpf, können nur Karten der
+     * ausgespielten Farbe den Stich gewinnen.
+     */
+    if (cardColor === normalizedLeadColor) {
+        return 1000 + cardValue;
+    }
+
+    /*
+     * Karten einer nicht ausgespielten Nicht-Trumpf-Farbe
+     * können den Stich nicht gewinnen.
+     */
+    return cardValue;
 }
 
 
@@ -280,29 +369,44 @@ export function determineTrickWinner(
     trick,
     leadColor
 ) {
-    const trumpCards =
-        trick.filter(
-            entry =>
-                entry.card.color ===
-                TRUMP_COLOR
+    if (
+        !Array.isArray(trick) ||
+        trick.length === 0
+    ) {
+        throw new Error(
+            "Ein leerer Stich kann nicht ausgewertet werden."
+        );
+    }
+
+    const effectiveLeadColor =
+        normalizeColor(
+            leadColor ??
+            trick[0]?.card?.color
         );
 
-    const relevantCards =
-        trumpCards.length > 0
-            ? trumpCards
-            : trick.filter(
-                entry =>
-                    entry.card.color ===
-                    leadColor
-            );
+    const winner =
+        trick.reduce(
+            (highestEntry, currentEntry) => {
+                const highestStrength =
+                    getTrickCardStrength(
+                        highestEntry.card,
+                        effectiveLeadColor
+                    );
 
-    return relevantCards.reduce(
-        (highest, current) =>
-            current.card.value >
-            highest.card.value
-                ? current
-                : highest
-    ).playerId;
+                const currentStrength =
+                    getTrickCardStrength(
+                        currentEntry.card,
+                        effectiveLeadColor
+                    );
+
+                return currentStrength >
+                    highestStrength
+                    ? currentEntry
+                    : highestEntry;
+            }
+        );
+
+    return winner.playerId;
 }
 
 

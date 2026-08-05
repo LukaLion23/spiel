@@ -20,12 +20,14 @@ import {
     database,
     determineTrickWinner,
     escapeHtml,
+    getCardColorClass,
     getNextPlayerId,
     getRoomCodeFromUrl,
+    normalizeColor,
     objectToCards,
     redirectToStatus,
     saveRoomSession
-} from "./firebase-common.js?v=51";
+} from "./firebase-common.js?v=52";
 
 
 let currentUser = null;
@@ -356,7 +358,9 @@ function renderTrick() {
 
     const activeColorClass =
         colorClassMap[
-            gameState?.leadColor
+            normalizeColor(
+                gameState?.leadColor
+            )
         ];
 
     if (activeColorClass) {
@@ -383,21 +387,36 @@ function renderTrick() {
                         entry.playerId
                     ]?.name ?? "Unbekannt";
 
+                const isWinningCard =
+                    gameState.status ===
+                        "trickResult" &&
+                    entry.playerId ===
+                        gameState.lastWinnerId;
+
+                const cardColor =
+                    normalizeColor(
+                        entry.card.color
+                    );
+
                 return `
-                    <div class="played-card-wrap">
+                    <div class="played-card-wrap ${isWinningCard ? "is-trick-winner" : ""}">
                         <span>
                             ${escapeHtml(playerName)}
                         </span>
 
                         <div
-                            class="card display-card card-${entry.card.color.toLowerCase()}"
+                            class="card display-card ${getCardColorClass(cardColor)}"
                             role="img"
-                            aria-label="${escapeHtml(entry.card.color)} ${entry.card.value}"
-                            title="${escapeHtml(entry.card.color)} ${entry.card.value}">
+                            aria-label="${escapeHtml(cardColor)} ${entry.card.value}"
+                            title="${escapeHtml(cardColor)} ${entry.card.value}">
 
                             <strong>${entry.card.value}</strong>
 
                         </div>
+
+                        ${isWinningCard
+                            ? '<span class="winner-badge">Stichgewinner</span>'
+                            : ""}
                     </div>
                 `;
             }).join("");
@@ -475,7 +494,7 @@ function renderHand() {
             return `
                 <button
                     type="button"
-                    class="card card-${card.color.toLowerCase()}"
+                    class="card ${getCardColorClass(card.color)}"
                     data-card-id="${escapeHtml(card.id)}"
                     aria-label="${escapeHtml(card.color)} ${card.value}"
                     ${disabled ? "disabled" : ""}
@@ -670,9 +689,53 @@ async function processPlayRequests() {
             return;
         }
 
+        const normalizedSelectedCard = {
+            id: String(
+                selectedCard.id ??
+                request.cardId
+            ),
+            color:
+                normalizeColor(
+                    selectedCard.color
+                ),
+            value:
+                Number(
+                    selectedCard.value
+                )
+        };
+
+        if (
+            ![
+                "Rot",
+                "Blau",
+                "Grün",
+                "Gelb"
+            ].includes(
+                normalizedSelectedCard.color
+            ) ||
+            !Number.isInteger(
+                normalizedSelectedCard.value
+            ) ||
+            normalizedSelectedCard.value < 1 ||
+            normalizedSelectedCard.value > 20
+        ) {
+            await remove(
+                ref(
+                    database,
+                    `games/${roomCode}/playRequests/${playerId}`
+                )
+            );
+
+            throw new Error(
+                "Die ausgewählte Karte enthält ungültige Daten."
+            );
+        }
+
         const leadColor =
-            state.leadColor ??
-            selectedCard.color;
+            normalizeColor(
+                state.leadColor ??
+                normalizedSelectedCard.color
+            );
 
         const trick =
             Array.isArray(
@@ -683,7 +746,7 @@ async function processPlayRequests() {
 
         trick.push({
             playerId,
-            card: selectedCard
+            card: normalizedSelectedCard
         });
 
         delete hand[request.cardId];

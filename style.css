@@ -1525,3 +1525,252 @@ button.card:hover:not(:disabled),
         font-size: 0.86rem;
     }
 }
+
+
+/* =========================================================
+   Update v52 – Kartenfarben, Gewinner und heller Modus
+   ========================================================= */
+
+:root {
+    color-scheme: light only;
+
+    --card-red-start: #ef5b5b;
+    --card-red-end: #a91f2b;
+    --card-blue-start: #5b91ee;
+    --card-blue-end: #2254b6;
+    --card-green-start: #50b978;
+    --card-green-end: #197343;
+    --card-yellow-start: #ffd45c;
+    --card-yellow-end: #d28a00;
+
+    --winner-outline: #25364a;
+    --winner-glow: rgba(37, 54, 74, 0.32);
+}
+
+html {
+    color-scheme: light only;
+    background: #eef3f8;
+}
+
+body {
+    color: #1c2734;
+    background:
+        radial-gradient(
+            circle at top left,
+            rgba(72, 120, 199, 0.18),
+            transparent 34rem
+        ),
+        linear-gradient(
+            145deg,
+            #eef3f8,
+            #dfe8f3
+        );
+}
+
+/*
+ * Explizite helle Werte verhindern, dass ein normales
+ * prefers-color-scheme: dark die Oberfläche umfärbt.
+ */
+@media (prefers-color-scheme: dark) {
+    :root {
+        color-scheme: light only;
+    }
+
+    html,
+    body {
+        color: #1c2734;
+        background-color: #eef3f8;
+    }
+
+    .panel,
+    .result-dialog {
+        color: #1c2734;
+        background-color: #ffffff;
+    }
+
+    input {
+        color: #1c2734;
+        background-color: #ffffff;
+    }
+}
+
+/* Einheitliche Kartenfläche mit deutlich erkennbarer Eigenfarbe. */
+
+.card {
+    border:
+        3px solid
+        rgba(255, 255, 255, 0.9);
+
+    background:
+        var(--card-face) !important;
+
+    box-shadow:
+        0 8px 18px
+        rgba(22, 34, 48, 0.2),
+        inset 0 0 0 2px
+        rgba(0, 0, 0, 0.11);
+}
+
+.card::after {
+    inset: 8px;
+    border:
+        2px solid
+        rgba(255, 255, 255, 0.48);
+}
+
+.card-rot {
+    --card-face:
+        linear-gradient(
+            145deg,
+            var(--card-red-start),
+            var(--card-red-end)
+        );
+
+    color: #ffffff !important;
+}
+
+.card-blau {
+    --card-face:
+        linear-gradient(
+            145deg,
+            var(--card-blue-start),
+            var(--card-blue-end)
+        );
+
+    color: #ffffff !important;
+}
+
+.card-gruen,
+.card-grün {
+    --card-face:
+        linear-gradient(
+            145deg,
+            var(--card-green-start),
+            var(--card-green-end)
+        );
+
+    color: #ffffff !important;
+}
+
+.card-gelb {
+    --card-face:
+        linear-gradient(
+            145deg,
+            var(--card-yellow-start),
+            var(--card-yellow-end)
+        );
+
+    color: #342500 !important;
+}
+
+.card-gelb::after {
+    border-color:
+        rgba(74, 50, 0, 0.31) !important;
+}
+
+/* Hover bewegt die Karte nur – Farbe und Rahmen bleiben identisch. */
+
+button.card:hover:not(:disabled),
+#game .card:hover:not(:disabled) {
+    color: inherit !important;
+    background:
+        var(--card-face) !important;
+
+    border-color:
+        rgba(255, 255, 255, 0.9);
+
+    transform:
+        translateY(-6px);
+
+    box-shadow:
+        0 14px 25px
+        rgba(22, 34, 48, 0.25),
+        inset 0 0 0 2px
+        rgba(0, 0, 0, 0.11);
+}
+
+/* Deaktiviert: dieselbe Farbe, nur heller und weniger kräftig. */
+
+button.card:disabled {
+    background:
+        var(--card-face) !important;
+
+    opacity: 0.56;
+
+    filter:
+        saturate(0.72)
+        brightness(1.08);
+
+    border-color:
+        rgba(255, 255, 255, 0.78);
+}
+
+/*
+ * Die Gewinnerkarte wird nicht umgefärbt.
+ * Sie erhält einen neutralen, kontrastreichen Doppelrahmen.
+ */
+
+.played-card-wrap {
+    position: relative;
+    padding: 6px;
+    border-radius: 19px;
+}
+
+.played-card-wrap.is-trick-winner {
+    background:
+        rgba(255, 255, 255, 0.88);
+
+    outline:
+        4px solid
+        var(--winner-outline);
+
+    outline-offset: 2px;
+
+    box-shadow:
+        0 0 0 5px
+        rgba(255, 255, 255, 0.95),
+        0 10px 28px
+        var(--winner-glow);
+}
+
+.played-card-wrap.is-trick-winner
+.card {
+    transform: none;
+}
+
+.winner-badge {
+    display: block;
+    margin-top: 8px;
+    padding: 5px 8px;
+    color: #ffffff;
+    background: var(--winner-outline);
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 850;
+    letter-spacing: 0.02em;
+}
+
+/*
+ * Der Rahmen des Stichfeldes zeigt weiterhin nur die
+ * ausgespielte Farbe. Er kennzeichnet nicht den Gewinner.
+ */
+
+.trick-panel {
+    background: rgba(255, 255, 255, 0.94);
+}
+
+.trick-panel.trick-color-rot {
+    border-color: var(--card-red-end);
+}
+
+.trick-panel.trick-color-blau {
+    border-color: var(--card-blue-end);
+}
+
+.trick-panel.trick-color-gruen {
+    border-color: var(--card-green-end);
+}
+
+.trick-panel.trick-color-gelb {
+    border-color: var(--card-yellow-end);
+}

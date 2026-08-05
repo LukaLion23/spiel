@@ -23,7 +23,7 @@ import {
     orderedPlayers,
     redirectToStatus,
     saveRoomSession
-} from "./firebase-common.js?v=51";
+} from "./firebase-common.js?v=52";
 
 
 let currentUser = null;
