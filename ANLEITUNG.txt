@@ -1,56 +1,50 @@
-NEUER SPIELABLAUF
+KARTENSPIEL – UPDATE V50
 
-Dateien umbenennen und ins GitHub-Repository kopieren:
+Diese Version berücksichtigt beide letzten Änderungslisten.
 
-index.txt            -> index.html
-lobby.txt            -> lobby.js
-round.txt            -> round.html
-round_js.txt         -> round.js
-tip.txt              -> tip.html
-tip_js.txt           -> tip.js
-game.txt             -> game.html
-game_js.txt          -> game.js
-firebase_common.txt  -> firebase-common.js
-style.txt            -> style.css
+DATEIEN
 
-In Firebase unter Realtime Database > Regeln:
-Inhalt aus firebase_regeln.txt einsetzen und veröffentlichen.
+index.html
+lobby.js
+round.html
+round.js
+tip.html
+tip.js
+game.html
+game.js
+firebase-common.js
+style.css
+firebase_regeln.txt
 
-Die alten Dateien firebase.js und script.js werden nicht mehr benötigt.
+ÄNDERUNGEN
 
-ABLAUF
+- Raumcode und Verbindungsanzeige erscheinen nur noch im Warteraum.
+- Während der eigentlichen Runden werden sie nicht mehr angezeigt.
+- Deaktivierte Karten bleiben farbig und werden nur verblasst.
+- Auf Karten steht nur noch die Zahl, mittig auf der Karte.
+- Die Spielende-Seite passt sich dynamisch an Handybildschirme an.
+- Nach Spielende entscheidet der Spielleiter:
+  - Neues Spiel
+  - Beenden
+- Bei "Neues Spiel" bleiben alle Spieler im Raum und die Punkte
+  werden zurückgesetzt.
+- Bei "Beenden" wird der Raum gelöscht und alle gelangen zur Startseite.
+- In jeder neuen Runde beginnt der nächste Spieler der Reihe nach.
+- Der Rundenanfänger gibt auch den ersten Tipp ab.
+- Danach wird der Reihe nach getippt.
+- Alle Spieler sehen währenddessen alle bereits abgegebenen Tipps.
+- Der letzte Spieler darf keinen Tipp wählen, durch den die Summe
+  aller Tipps genau der Anzahl der ausgeteilten Karten entspricht.
+- Nach allen Tipps wechseln alle automatisch zur Spielseite.
+- Nach jeder Runde erscheint das persönliche Ergebnis fünf Sekunden.
 
-1. index.html:
-   Raum erstellen, beitreten und Warteraum.
+INSTALLATION
 
-2. Der Spielleiter klickt:
-   "Alle sind da – weiter".
+1. Den Inhalt dieses ZIP-Ordners in dein GitHub-Repository kopieren.
+2. Vorhandene Dateien mit denselben Namen ersetzen.
+3. firebase_regeln.txt in Firebase unter
+   Realtime Database > Regeln einsetzen und veröffentlichen.
+4. Änderungen committen und pushen.
+5. GitHub Pages nach dem Deployment mit Strg + F5 neu laden.
 
-3. round.html:
-   Nur der Spielleiter sieht die Eingabe für Karten pro Spieler.
-   Alle anderen sehen einen Wartebildschirm.
-
-4. tip.html:
-   Jeder sieht seine Handkarten und gibt seinen Tipp ab.
-   Die tatsächlichen Tipps der anderen werden hier noch nicht gezeigt.
-
-5. Sobald alle Tipps gespeichert sind:
-   Alle Geräte wechseln automatisch auf game.html.
-
-6. game.html:
-   Jeder sieht seine eigenen Karten, alle Tipps, bisherige Stiche,
-   den aktuellen Stich, die Stichfarbe und den Spieler am Zug.
-
-7. Nach der Runde:
-   Jeder sieht 5 Sekunden lang sein persönliches Ergebnis:
-   Tipp, geschaffte Stiche, Rundenpunkte und Gesamtpunkte.
-
-8. Nach 5 Sekunden:
-   Alle wechseln automatisch zurück auf round.html.
-   Nur der Spielleiter sieht die Eingabe für die nächste Kartenanzahl.
-
-WICHTIG
-
-Alle Dateien müssen im selben Ordner liegen.
-Nach dem Hochladen GitHub Pages mit Strg + F5 aktualisieren.
-Die Versionsnummer ?v=40 kann bei späteren Änderungen erhöht werden.
+Die Dateien verwenden die Cache-Version ?v=50.

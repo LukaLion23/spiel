@@ -11,24 +11,20 @@
 
     <link
         rel="stylesheet"
-        href="./style.css?v=40">
+        href="./style.css?v=50">
 </head>
 
-<body>
+<body class="round-page">
 
     <h1>Rundenvorbereitung</h1>
 
     <main class="container">
 
-        <section class="panel">
-            <h2>Spielraum</h2>
-
-            <p id="activeRoomCode"></p>
-
-            <p id="firebaseStatus">
-                Rundenvorbereitung wird geladen …
-            </p>
-        </section>
+        <p
+            class="page-error"
+            id="pageError"
+            hidden>
+        </p>
 
         <section
             class="panel round-setup-card"
@@ -55,6 +51,7 @@
             <input
                 id="cardsPerPlayer"
                 type="number"
+                inputmode="numeric"
                 min="1"
                 max="40"
                 step="1"
@@ -87,7 +84,7 @@
             <h2>Warte auf den Spielleiter</h2>
 
             <p>
-                Der Spielleiter legt gerade fest,
+                Der Spielleiter legt fest,
                 wie viele Karten in der nächsten Runde
                 gespielt werden.
             </p>
@@ -101,12 +98,15 @@
 
             <h2>Letzte Runde</h2>
 
-            <div id="lastRoundScores"></div>
+            <div
+                class="table-scroll"
+                id="lastRoundScores">
+            </div>
 
         </section>
 
         <section
-            class="panel"
+            class="panel final-result-panel"
             id="finalResultPanel"
             hidden>
 
@@ -114,18 +114,52 @@
 
             <div id="finalResult"></div>
 
+            <div
+                class="final-actions"
+                id="finalHostActions"
+                hidden>
+
+                <button
+                    id="newGameButton"
+                    type="button">
+                    Neues Spiel
+                </button>
+
+                <button
+                    id="endRoomButton"
+                    class="secondary-button"
+                    type="button">
+                    Beenden
+                </button>
+
+            </div>
+
+            <div
+                class="final-waiting"
+                id="finalPlayerWaiting"
+                hidden>
+
+                Der Spielleiter entscheidet,
+                ob ein neues Spiel gestartet wird.
+
+            </div>
+
         </section>
 
     </main>
 
     <script type="module">
-        import("./round.js?v=40")
+        import("./round.js?v=50")
             .catch(error => {
                 console.error(error);
 
-                document.getElementById(
-                    "firebaseStatus"
-                ).textContent =
+                const errorElement =
+                    document.getElementById(
+                        "pageError"
+                    );
+
+                errorElement.hidden = false;
+                errorElement.textContent =
                     "Rundenseite konnte nicht geladen werden: " +
                     error.message;
             });

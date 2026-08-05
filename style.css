@@ -1057,3 +1057,394 @@ progress {
         padding: 24px 18px;
     }
 }
+
+
+/* =========================================================
+   Update v50
+   ========================================================= */
+
+.page-error {
+    width: min(900px, 100%);
+    margin: 0 auto;
+    padding: 13px 15px;
+    color: #8a2525;
+    background: #fff0f0;
+    border: 1px solid #edc6c6;
+    border-radius: var(--radius-small);
+    font-weight: 700;
+}
+
+.table-scroll {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Karten: Farbe bleibt auch im deaktivierten Zustand sichtbar. */
+
+.card {
+    --card-face:
+        linear-gradient(
+            145deg,
+            #65717f,
+            #4e5965
+        );
+
+    justify-content: center !important;
+    align-items: center !important;
+    text-align: center;
+
+    background: var(--card-face);
+}
+
+.card-rot {
+    --card-face:
+        linear-gradient(
+            145deg,
+            #df5656,
+            var(--card-red)
+        );
+
+    background: var(--card-face);
+}
+
+.card-blau {
+    --card-face:
+        linear-gradient(
+            145deg,
+            #5088e5,
+            var(--card-blue)
+        );
+
+    background: var(--card-face);
+}
+
+.card-grün {
+    --card-face:
+        linear-gradient(
+            145deg,
+            #46ac70,
+            var(--card-green)
+        );
+
+    background: var(--card-face);
+}
+
+.card-gelb {
+    --card-face:
+        linear-gradient(
+            145deg,
+            #f0bd3d,
+            var(--card-yellow)
+        );
+
+    background: var(--card-face);
+}
+
+.card strong {
+    position: relative;
+    z-index: 1;
+    align-self: center !important;
+    margin: 0;
+    font-size: clamp(2.1rem, 6vw, 3rem);
+    line-height: 1;
+}
+
+button.card:disabled {
+    color: #ffffff;
+    background: var(--card-face) !important;
+    opacity: 0.48;
+    filter:
+        saturate(0.68)
+        brightness(0.97);
+    box-shadow:
+        0 5px 12px
+        rgba(24, 38, 53, 0.13);
+}
+
+button.card-gelb:disabled,
+.card-gelb {
+    color: #352800;
+}
+
+button.card:disabled::after {
+    border-color:
+        rgba(255, 255, 255, 0.27);
+}
+
+/* Tipp-Reihenfolge */
+
+.tip-heading {
+    text-align: center;
+}
+
+.current-tip-player {
+    margin-bottom: 0;
+    padding: 12px 14px;
+    color: #244a78;
+    background: var(--primary-light);
+    border: 1px solid #c9d8f2;
+    border-radius: var(--radius-small);
+    font-size: 1.05rem;
+}
+
+.tip-order-list {
+    display: grid;
+    gap: 10px;
+}
+
+.tip-order-row {
+    display: grid;
+    grid-template-columns:
+        38px
+        minmax(0, 1fr)
+        auto;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    background: var(--surface-muted);
+    border: 2px solid transparent;
+    border-radius: var(--radius-small);
+}
+
+.tip-order-row.is-current {
+    background: #edf4ff;
+    border-color: var(--primary);
+}
+
+.tip-position {
+    display: grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    color: #ffffff;
+    background: #63758a;
+    border-radius: 50%;
+    font-weight: 850;
+}
+
+.tip-order-row.is-current
+.tip-position {
+    background: var(--primary);
+}
+
+.tip-player-name {
+    min-width: 0;
+    font-weight: 800;
+}
+
+.tip-player-name small {
+    display: block;
+    margin-top: 2px;
+    color: var(--text-muted);
+    font-size: 0.74rem;
+    font-weight: 650;
+}
+
+.tip-value {
+    white-space: nowrap;
+    color: #344b63;
+}
+
+/* Spielende: responsive Ergebnisanzeige */
+
+.final-result-panel {
+    width: 100%;
+    max-width: 760px;
+    margin-inline: auto;
+    overflow: hidden;
+}
+
+.winner-card {
+    display: grid;
+    justify-items: center;
+    gap: 5px;
+    margin-bottom: 18px;
+    padding: 22px 16px;
+    text-align: center;
+    background:
+        linear-gradient(
+            145deg,
+            #e8f6ee,
+            #d7efe1
+        );
+    border: 1px solid #b9dfc8;
+    border-radius: var(--radius-medium);
+}
+
+.winner-card span {
+    color: #47705a;
+    font-size: 0.83rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+}
+
+.winner-card strong {
+    max-width: 100%;
+    overflow-wrap: anywhere;
+    color: #175b37;
+    font-size: clamp(1.35rem, 6vw, 2rem);
+}
+
+.winner-card small {
+    color: #365e47;
+    font-size: 1rem;
+    font-weight: 750;
+}
+
+.final-ranking {
+    display: grid;
+    gap: 9px;
+}
+
+.final-rank-row {
+    display: grid;
+    grid-template-columns:
+        38px
+        minmax(0, 1fr)
+        auto;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    padding: 12px 14px;
+    background: var(--surface-muted);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-small);
+}
+
+.rank-number {
+    display: grid;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    color: #ffffff;
+    background: #536d88;
+    border-radius: 50%;
+    font-weight: 850;
+}
+
+.rank-name {
+    min-width: 0;
+    overflow-wrap: anywhere;
+    font-weight: 800;
+}
+
+.rank-points {
+    white-space: nowrap;
+}
+
+.final-actions {
+    display: grid;
+    grid-template-columns:
+        repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    margin-top: 22px;
+}
+
+.final-waiting {
+    margin-top: 20px;
+    padding: 14px;
+    text-align: center;
+    color: var(--text-muted);
+    background: var(--surface-muted);
+    border-radius: var(--radius-small);
+}
+
+/* Rundenfenster passt sich an kleine Handybildschirme an. */
+
+.result-dialog {
+    width:
+        min(
+            460px,
+            calc(100vw - 24px)
+        );
+    max-height:
+        calc(100dvh - 24px);
+    overflow-y: auto;
+    padding:
+        clamp(18px, 5vw, 30px);
+}
+
+.result-dialog p {
+    flex-wrap: wrap;
+}
+
+@media (max-width: 520px) {
+    body {
+        overflow-x: hidden;
+    }
+
+    body > h1 {
+        font-size:
+            clamp(
+                1.75rem,
+                9vw,
+                2.4rem
+            );
+    }
+
+    .panel {
+        width: 100%;
+        min-width: 0;
+    }
+
+    .tip-order-row,
+    .final-rank-row {
+        grid-template-columns:
+            34px
+            minmax(0, 1fr);
+    }
+
+    .tip-value,
+    .rank-points {
+        grid-column: 2;
+        white-space: normal;
+    }
+
+    .final-actions {
+        grid-template-columns: 1fr;
+    }
+
+    .final-actions button {
+        width: 100%;
+    }
+
+    .winner-card {
+        padding-inline: 12px;
+    }
+
+    .result-dialog p {
+        display: grid;
+        grid-template-columns:
+            minmax(0, 1fr)
+            auto;
+        align-items: center;
+        text-align: left;
+    }
+
+    .result-dialog
+    .countdown-text {
+        display: block;
+        text-align: center;
+    }
+}
+
+@media (max-width: 370px) {
+    .card {
+        min-width: 72px;
+        min-height: 108px;
+    }
+
+    .card strong {
+        font-size: 1.85rem;
+    }
+
+    .result-dialog {
+        width:
+            calc(100vw - 14px);
+        max-height:
+            calc(100dvh - 14px);
+        border-radius: 18px;
+    }
+}

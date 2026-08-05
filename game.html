@@ -11,14 +11,20 @@
 
     <link
         rel="stylesheet"
-        href="./style.css?v=40">
+        href="./style.css?v=50">
 </head>
 
-<body>
+<body class="game-page">
 
     <h1>Online-Kartenspiel</h1>
 
     <main class="container">
+
+        <p
+            class="page-error"
+            id="pageError"
+            hidden>
+        </p>
 
         <section class="panel game-status-bar">
 
@@ -90,14 +96,6 @@
             </div>
         </section>
 
-        <p
-            id="firebaseStatus"
-            class="connection-status">
-
-            Spiel wird geladen …
-
-        </p>
-
     </main>
 
     <div
@@ -144,13 +142,17 @@
     </div>
 
     <script type="module">
-        import("./game.js?v=40")
+        import("./game.js?v=50")
             .catch(error => {
                 console.error(error);
 
-                document.getElementById(
-                    "firebaseStatus"
-                ).textContent =
+                const errorElement =
+                    document.getElementById(
+                        "pageError"
+                    );
+
+                errorElement.hidden = false;
+                errorElement.textContent =
                     "Spielseite konnte nicht geladen werden: " +
                     error.message;
             });

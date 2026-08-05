@@ -1,6 +1,5 @@
 /*
  * Gemeinsame Firebase-Verbindung und Hilfsfunktionen.
- * Diese Datei wird von allen Seiten als ES-Modul verwendet.
  */
 
 import {
@@ -333,6 +332,26 @@ export function getNextPlayerId(
     return playerOrder[
         (currentIndex + 1) %
         playerOrder.length
+    ];
+}
+
+
+export function rotateOrder(
+    playerOrder,
+    startingPlayerId
+) {
+    const startIndex =
+        playerOrder.indexOf(
+            startingPlayerId
+        );
+
+    if (startIndex < 0) {
+        return [...playerOrder];
+    }
+
+    return [
+        ...playerOrder.slice(startIndex),
+        ...playerOrder.slice(0, startIndex)
     ];
 }
 

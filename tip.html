@@ -11,24 +11,31 @@
 
     <link
         rel="stylesheet"
-        href="./style.css?v=40">
+        href="./style.css?v=50">
 </head>
 
-<body>
+<body class="tip-page">
 
     <h1>Dein Tipp</h1>
 
     <main class="container">
 
-        <section class="panel">
+        <p
+            class="page-error"
+            id="pageError"
+            hidden>
+        </p>
+
+        <section class="panel tip-heading">
             <h2 id="roundTitle">
                 Runde wird geladen …
             </h2>
 
             <p id="playerDisplay"></p>
 
-            <p id="firebaseStatus">
-                Karten werden geladen …
+            <p
+                class="current-tip-player"
+                id="currentTipPlayer">
             </p>
         </section>
 
@@ -45,6 +52,7 @@
             <input
                 id="tipInput"
                 type="number"
+                inputmode="numeric"
                 min="0"
                 step="1"
                 value="0">
@@ -74,21 +82,25 @@
         </section>
 
         <section class="panel">
-            <h2>Tipps abgegeben</h2>
+            <h2>Tipp-Reihenfolge</h2>
 
-            <div id="tipProgress"></div>
+            <div id="tipOverview"></div>
         </section>
 
     </main>
 
     <script type="module">
-        import("./tip.js?v=40")
+        import("./tip.js?v=50")
             .catch(error => {
                 console.error(error);
 
-                document.getElementById(
-                    "firebaseStatus"
-                ).textContent =
+                const errorElement =
+                    document.getElementById(
+                        "pageError"
+                    );
+
+                errorElement.hidden = false;
+                errorElement.textContent =
                     "Tippseite konnte nicht geladen werden: " +
                     error.message;
             });

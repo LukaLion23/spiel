@@ -13,13 +13,15 @@ import {
 
 import {
     auth,
+    clearRoomSession,
     database,
     escapeHtml,
     getRoomCodeFromUrl,
     objectToCards,
     redirectToStatus,
+    rotateOrder,
     saveRoomSession
-} from "./firebase-common.js?v=40";
+} from "./firebase-common.js?v=50";
 
 
 let currentUser = null;
@@ -31,7 +33,11 @@ let ownHand = {};
 
 let stopTipRequestsListener = null;
 let processingTips = false;
+let tipRequestPending = false;
 
+
+const pageError =
+    document.getElementById("pageError");
 
 const roundTitle =
     document.getElementById("roundTitle");
@@ -39,8 +45,8 @@ const roundTitle =
 const playerDisplay =
     document.getElementById("playerDisplay");
 
-const firebaseStatus =
-    document.getElementById("firebaseStatus");
+const currentTipPlayerElement =
+    document.getElementById("currentTipPlayer");
 
 const tipInput =
     document.getElementById("tipInput");
@@ -54,8 +60,14 @@ const tipStatus =
 const handArea =
     document.getElementById("handArea");
 
-const tipProgress =
-    document.getElementById("tipProgress");
+const tipOverview =
+    document.getElementById("tipOverview");
+
+
+function showError(message) {
+    pageError.hidden = false;
+    pageError.textContent = message;
+}
 
 
 function isHost() {
@@ -67,13 +79,92 @@ function isHost() {
 }
 
 
+function getTipOrder(state = gameState) {
+    if (!state) {
+        return [];
+    }
+
+    if (
+        Array.isArray(state.tipOrder) &&
+        state.tipOrder.length > 0
+    ) {
+        return state.tipOrder;
+    }
+
+    return rotateOrder(
+        state.playerOrder ?? [],
+        state.startingPlayerId
+    );
+}
+
+
+function getForbiddenLastTip(
+    state = gameState,
+    scores = gameScores
+) {
+    if (!state) {
+        return null;
+    }
+
+    const tipOrder =
+        getTipOrder(state);
+
+    const currentTipPlayerId =
+        state.currentTipPlayerId;
+
+    if (
+        tipOrder.length === 0 ||
+        currentTipPlayerId !==
+            tipOrder[tipOrder.length - 1]
+    ) {
+        return null;
+    }
+
+    const previousPlayerIds =
+        tipOrder.slice(
+            0,
+            tipOrder.length - 1
+        );
+
+    const previousTipSum =
+        previousPlayerIds.reduce(
+            (sum, playerId) =>
+                sum +
+                (
+                    scores[playerId]
+                        ?.tipSubmitted
+                        ? Number(
+                            scores[playerId].tip
+                        )
+                        : 0
+                ),
+            0
+        );
+
+    const forbiddenTip =
+        state.cardsPerPlayer -
+        previousTipSum;
+
+    if (
+        forbiddenTip < 0 ||
+        forbiddenTip >
+            state.cardsPerPlayer
+    ) {
+        return null;
+    }
+
+    return forbiddenTip;
+}
+
+
 async function initializePage() {
     roomCode =
         getRoomCodeFromUrl();
 
     if (roomCode.length !== 6) {
-        firebaseStatus.textContent =
-            "Kein Spielraum gefunden.";
+        showError(
+            "Kein Spielraum gefunden."
+        );
         return;
     }
 
@@ -99,8 +190,9 @@ async function initializePage() {
         !metaSnapshot.exists() ||
         !playerSnapshot.exists()
     ) {
-        firebaseStatus.textContent =
-            "Du gehörst nicht zu diesem Spiel.";
+        showError(
+            "Du gehörst nicht zu diesem Spiel."
+        );
         return;
     }
 
@@ -124,8 +216,11 @@ function attachListeners() {
         ),
         snapshot => {
             if (!snapshot.exists()) {
-                firebaseStatus.textContent =
-                    "Der Spielraum wurde gelöscht.";
+                clearRoomSession();
+
+                window.location.replace(
+                    "./index.html"
+                );
                 return;
             }
 
@@ -142,6 +237,10 @@ function attachListeners() {
             }
 
             attachHostListener();
+            renderPage();
+        },
+        error => {
+            showError(error.message);
         }
     );
 
@@ -154,14 +253,11 @@ function attachListeners() {
             gameState =
                 snapshot.val();
 
-            if (gameState) {
-                roundTitle.textContent =
-                    `Runde ${gameState.roundNumber}: Tipp abgeben`;
-
-                tipInput.max =
-                    String(
-                        gameState.cardsPerPlayer
-                    );
+            if (
+                gameState?.currentTipPlayerId !==
+                currentUser.uid
+            ) {
+                tipRequestPending = false;
             }
 
             renderPage();
@@ -176,6 +272,16 @@ function attachListeners() {
         snapshot => {
             gameScores =
                 snapshot.val() ?? {};
+
+            const ownScore =
+                gameScores[currentUser.uid];
+
+            if (
+                ownScore?.tipSubmitted ||
+                ownScore?.tipError
+            ) {
+                tipRequestPending = false;
+            }
 
             renderPage();
         }
@@ -222,9 +328,38 @@ function attachHostListener() {
 
 
 function renderPage() {
-    if (!currentUser || !gameState) {
+    if (
+        !currentUser ||
+        !gameState
+    ) {
         return;
     }
+
+    roundTitle.textContent =
+        `Runde ${gameState.roundNumber}: Tipp abgeben`;
+
+    tipInput.max =
+        String(
+            gameState.cardsPerPlayer
+        );
+
+    const tipOrder =
+        getTipOrder();
+
+    const currentTipPlayerId =
+        gameState.currentTipPlayerId;
+
+    const currentTipPlayerName =
+        gameScores[currentTipPlayerId]
+            ?.name ??
+        "Unbekannt";
+
+    currentTipPlayerElement.innerHTML = `
+        Jetzt tippt:
+        <strong>
+            ${escapeHtml(currentTipPlayerName)}
+        </strong>
+    `;
 
     const ownScore =
         gameScores[currentUser.uid];
@@ -234,47 +369,112 @@ function renderPage() {
             ownScore?.tipSubmitted
         );
 
-    tipInput.disabled = submitted;
-    submitTipButton.disabled = submitted;
+    const ownTurn =
+        currentTipPlayerId ===
+        currentUser.uid;
+
+    tipInput.disabled =
+        submitted ||
+        !ownTurn ||
+        tipRequestPending;
+
+    submitTipButton.disabled =
+        submitted ||
+        !ownTurn ||
+        tipRequestPending;
 
     if (submitted) {
         tipInput.value =
             String(ownScore.tip);
 
         tipStatus.textContent =
-            "Dein Tipp wurde gespeichert. Warte auf die anderen Spieler.";
-    } else {
+            "Dein Tipp wurde gespeichert.";
+    } else if (ownScore?.tipError) {
         tipStatus.textContent =
-            `Erlaubt sind 0 bis ${gameState.cardsPerPlayer} Stiche.`;
+            ownScore.tipError;
+    } else if (!ownTurn) {
+        tipStatus.textContent =
+            `${currentTipPlayerName} ist mit dem Tipp dran.`;
+    } else {
+        const forbiddenTip =
+            getForbiddenLastTip();
+
+        if (forbiddenTip === null) {
+            tipStatus.textContent =
+                `Du bist dran. Erlaubt sind 0 bis ` +
+                `${gameState.cardsPerPlayer} Stiche.`;
+        } else {
+            tipStatus.textContent =
+                `Du bist als Letzter dran. ` +
+                `Du darfst nicht ${forbiddenTip} tippen, ` +
+                `weil die Summe aller Tipps sonst genau ` +
+                `${gameState.cardsPerPlayer} wäre.`;
+        }
     }
 
-    const scores =
-        Object.values(gameScores);
+    renderTipOverview(
+        tipOrder,
+        currentTipPlayerId
+    );
+}
 
-    const submittedCount =
-        scores.filter(
-            score =>
-                score.tipSubmitted
-        ).length;
 
-    tipProgress.innerHTML = `
-        <div class="progress-row">
-            <span>
-                ${submittedCount} von ${scores.length}
-                Spielern haben ihren Tipp abgegeben.
-            </span>
+function renderTipOverview(
+    tipOrder,
+    currentTipPlayerId
+) {
+    let html =
+        '<div class="tip-order-list">';
 
-            <progress
-                max="${scores.length}"
-                value="${submittedCount}">
-            </progress>
-        </div>
-    `;
+    tipOrder.forEach(
+        (playerId, index) => {
+            const player =
+                gameScores[playerId];
 
-    firebaseStatus.textContent =
-        submitted
-            ? "Tipp gespeichert."
-            : "Wähle deinen Tipp anhand deiner Karten.";
+            if (!player) {
+                return;
+            }
+
+            const isCurrent =
+                playerId ===
+                currentTipPlayerId;
+
+            const isStarter =
+                playerId ===
+                gameState.startingPlayerId;
+
+            let result = "wartet";
+
+            if (player.tipSubmitted) {
+                result =
+                    `${player.tip} Stiche`;
+            } else if (isCurrent) {
+                result =
+                    "tippt jetzt";
+            }
+
+            html += `
+                <div class="tip-order-row ${isCurrent ? "is-current" : ""}">
+                    <span class="tip-position">
+                        ${index + 1}
+                    </span>
+
+                    <span class="tip-player-name">
+                        ${escapeHtml(player.name)}
+                        ${isStarter ? '<small>Rundenanfänger</small>' : ""}
+                    </span>
+
+                    <strong class="tip-value">
+                        ${escapeHtml(result)}
+                    </strong>
+                </div>
+            `;
+        }
+    );
+
+    html += "</div>";
+
+    tipOverview.innerHTML = html;
 }
 
 
@@ -291,9 +491,13 @@ function renderHand() {
     handArea.innerHTML =
         cards.map(card => `
             <div
-                class="card display-card card-${card.color.toLowerCase()}">
-                <span>${escapeHtml(card.color)}</span>
+                class="card display-card card-${card.color.toLowerCase()}"
+                role="img"
+                aria-label="${escapeHtml(card.color)} ${card.value}"
+                title="${escapeHtml(card.color)} ${card.value}">
+
                 <strong>${card.value}</strong>
+
             </div>
         `).join("");
 }
@@ -307,13 +511,24 @@ async function submitTip() {
         return;
     }
 
+    if (
+        gameState.currentTipPlayerId !==
+        currentUser.uid
+    ) {
+        alert(
+            "Du bist noch nicht mit deinem Tipp an der Reihe."
+        );
+        return;
+    }
+
     const tip =
         Number(tipInput.value);
 
     if (
         !Number.isInteger(tip) ||
         tip < 0 ||
-        tip > gameState.cardsPerPlayer
+        tip >
+            gameState.cardsPerPlayer
     ) {
         alert(
             `Bitte gib eine ganze Zahl von 0 bis ` +
@@ -322,7 +537,23 @@ async function submitTip() {
         return;
     }
 
-    submitTipButton.disabled = true;
+    const forbiddenTip =
+        getForbiddenLastTip();
+
+    if (
+        forbiddenTip !== null &&
+        tip === forbiddenTip
+    ) {
+        alert(
+            `Du darfst nicht ${forbiddenTip} tippen. ` +
+            `Die Summe aller Tipps wäre sonst genau so hoch ` +
+            `wie die Anzahl der Karten.`
+        );
+        return;
+    }
+
+    tipRequestPending = true;
+    renderPage();
 
     try {
         await set(
@@ -336,17 +567,15 @@ async function submitTip() {
             }
         );
 
-        tipStatus.textContent =
-            "Tipp wird gespeichert …";
-
     } catch (error) {
         console.error(error);
+
+        tipRequestPending = false;
+        renderPage();
 
         alert(
             `Tipp konnte nicht gespeichert werden: ${error.message}`
         );
-
-        submitTipButton.disabled = false;
     }
 }
 
@@ -403,73 +632,153 @@ async function processTipRequests() {
             return;
         }
 
+        const tipOrder =
+            Array.isArray(state.tipOrder)
+                ? state.tipOrder
+                : rotateOrder(
+                    state.playerOrder ?? [],
+                    state.startingPlayerId
+                );
+
+        const currentPlayerId =
+            state.currentTipPlayerId ??
+            tipOrder[0];
+
+        const request =
+            requests[currentPlayerId];
+
         const updates = {};
-        let changed = false;
 
+        /*
+         * Zu früh gesendete Anfragen anderer Spieler entfernen.
+         */
         for (
-            const playerId of
-            state.playerOrder
+            const requestPlayerId of
+            Object.keys(requests)
         ) {
-            const request =
-                requests[playerId];
-
-            const score =
-                scores[playerId];
-
             if (
-                !request ||
-                !score ||
-                score.tipSubmitted
-            ) {
-                continue;
-            }
-
-            const tip =
-                Number(request.tip);
-
-            if (
-                !Number.isInteger(tip) ||
-                tip < 0 ||
-                tip >
-                    state.cardsPerPlayer
+                requestPlayerId !==
+                currentPlayerId
             ) {
                 updates[
-                    `games/${roomCode}/tipRequests/${playerId}`
+                    `games/${roomCode}/tipRequests/${requestPlayerId}`
                 ] = null;
-
-                changed = true;
-                continue;
             }
-
-            scores[playerId] = {
-                ...score,
-                tip,
-                tipSubmitted: true
-            };
-
-            updates[
-                `games/${roomCode}/scores/${playerId}/tip`
-            ] = tip;
-
-            updates[
-                `games/${roomCode}/scores/${playerId}/tipSubmitted`
-            ] = true;
-
-            updates[
-                `games/${roomCode}/tipRequests/${playerId}`
-            ] = null;
-
-            changed = true;
         }
 
-        const allSubmitted =
-            state.playerOrder.every(
-                playerId =>
-                    scores[playerId]
-                        ?.tipSubmitted
+        if (!request) {
+            if (
+                Object.keys(updates).length > 0
+            ) {
+                await update(
+                    ref(database),
+                    updates
+                );
+            }
+
+            return;
+        }
+
+        const score =
+            scores[currentPlayerId];
+
+        const tip =
+            Number(request.tip);
+
+        if (
+            !score ||
+            score.tipSubmitted ||
+            !Number.isInteger(tip) ||
+            tip < 0 ||
+            tip > state.cardsPerPlayer
+        ) {
+            updates[
+                `games/${roomCode}/tipRequests/${currentPlayerId}`
+            ] = null;
+
+            await update(
+                ref(database),
+                updates
             );
 
-        if (allSubmitted) {
+            return;
+        }
+
+        const currentIndex =
+            tipOrder.indexOf(
+                currentPlayerId
+            );
+
+        const isLastTip =
+            currentIndex ===
+            tipOrder.length - 1;
+
+        if (isLastTip) {
+            const previousTipSum =
+                tipOrder
+                    .slice(
+                        0,
+                        tipOrder.length - 1
+                    )
+                    .reduce(
+                        (sum, playerId) =>
+                            sum +
+                            (
+                                scores[playerId]
+                                    ?.tipSubmitted
+                                    ? Number(
+                                        scores[playerId].tip
+                                    )
+                                    : 0
+                            ),
+                        0
+                    );
+
+            if (
+                previousTipSum + tip ===
+                state.cardsPerPlayer
+            ) {
+                updates[
+                    `games/${roomCode}/tipRequests/${currentPlayerId}`
+                ] = null;
+
+                updates[
+                    `games/${roomCode}/scores/${currentPlayerId}/tipError`
+                ] =
+                    `Dieser Tipp ist nicht erlaubt. ` +
+                    `Die Summe aller Tipps darf nicht genau ` +
+                    `${state.cardsPerPlayer} ergeben.`;
+
+                await update(
+                    ref(database),
+                    updates
+                );
+
+                return;
+            }
+        }
+
+        updates[
+            `games/${roomCode}/scores/${currentPlayerId}/tip`
+        ] = tip;
+
+        updates[
+            `games/${roomCode}/scores/${currentPlayerId}/tipSubmitted`
+        ] = true;
+
+        updates[
+            `games/${roomCode}/scores/${currentPlayerId}/tipError`
+        ] = "";
+
+        updates[
+            `games/${roomCode}/tipRequests/${currentPlayerId}`
+        ] = null;
+
+        if (isLastTip) {
+            updates[
+                `games/${roomCode}/state/currentTipPlayerId`
+            ] = null;
+
             updates[
                 `games/${roomCode}/state/status`
             ] = "playing";
@@ -477,16 +786,19 @@ async function processTipRequests() {
             updates[
                 `games/${roomCode}/meta/status`
             ] = "playing";
-
-            changed = true;
+        } else {
+            updates[
+                `games/${roomCode}/state/currentTipPlayerId`
+            ] =
+                tipOrder[
+                    currentIndex + 1
+                ];
         }
 
-        if (changed) {
-            await update(
-                ref(database),
-                updates
-            );
-        }
+        await update(
+            ref(database),
+            updates
+        );
 
     } catch (error) {
         console.error(
@@ -517,8 +829,9 @@ onAuthStateChanged(
             } catch (error) {
                 console.error(error);
 
-                firebaseStatus.textContent =
-                    `Seite konnte nicht geladen werden: ${error.message}`;
+                showError(
+                    `Seite konnte nicht geladen werden: ${error.message}`
+                );
             }
 
             return;
@@ -529,8 +842,9 @@ onAuthStateChanged(
         } catch (error) {
             console.error(error);
 
-            firebaseStatus.textContent =
-                `Anmeldung fehlgeschlagen: ${error.message}`;
+            showError(
+                `Anmeldung fehlgeschlagen: ${error.message}`
+            );
         }
     }
 );

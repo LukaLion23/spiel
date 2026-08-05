@@ -15,14 +15,16 @@ import {
     auth,
     database,
     cardsToObject,
+    clearRoomSession,
     createDeck,
     escapeHtml,
     getRoomCodeFromUrl,
     orderedPlayers,
     redirectToStatus,
+    rotateOrder,
     saveRoomSession,
     shuffle
-} from "./firebase-common.js?v=40";
+} from "./firebase-common.js?v=50";
 
 
 let currentUser = null;
@@ -33,11 +35,8 @@ let gameState = null;
 let gameScores = {};
 
 
-const activeRoomCodeElement =
-    document.getElementById("activeRoomCode");
-
-const firebaseStatus =
-    document.getElementById("firebaseStatus");
+const pageError =
+    document.getElementById("pageError");
 
 const hostSetup =
     document.getElementById("hostSetup");
@@ -72,6 +71,24 @@ const finalResultPanel =
 const finalResult =
     document.getElementById("finalResult");
 
+const finalHostActions =
+    document.getElementById("finalHostActions");
+
+const finalPlayerWaiting =
+    document.getElementById("finalPlayerWaiting");
+
+const newGameButton =
+    document.getElementById("newGameButton");
+
+const endRoomButton =
+    document.getElementById("endRoomButton");
+
+
+function showError(message) {
+    pageError.hidden = false;
+    pageError.textContent = message;
+}
+
 
 function isHost() {
     return Boolean(
@@ -87,8 +104,9 @@ async function initializePage() {
         getRoomCodeFromUrl();
 
     if (roomCode.length !== 6) {
-        firebaseStatus.textContent =
-            "Kein gültiger Spielraum gefunden.";
+        showError(
+            "Kein gültiger Spielraum gefunden."
+        );
         return;
     }
 
@@ -114,8 +132,9 @@ async function initializePage() {
         !metaSnapshot.exists() ||
         !playerSnapshot.exists()
     ) {
-        firebaseStatus.textContent =
-            "Du gehörst nicht zu diesem Spielraum.";
+        showError(
+            "Du gehörst nicht zu diesem Spielraum."
+        );
         return;
     }
 
@@ -123,14 +142,6 @@ async function initializePage() {
         roomCode,
         playerSnapshot.val().name
     );
-
-    activeRoomCodeElement.innerHTML = `
-        Spielcode:
-        <strong>${escapeHtml(roomCode)}</strong>
-    `;
-
-    firebaseStatus.textContent =
-        "Mit dem Spiel verbunden.";
 
     attachListeners();
 }
@@ -144,8 +155,11 @@ function attachListeners() {
         ),
         snapshot => {
             if (!snapshot.exists()) {
-                firebaseStatus.textContent =
-                    "Der Spielraum wurde gelöscht.";
+                clearRoomSession();
+
+                window.location.replace(
+                    "./index.html"
+                );
                 return;
             }
 
@@ -167,6 +181,9 @@ function attachListeners() {
             }
 
             renderPage();
+        },
+        error => {
+            showError(error.message);
         }
     );
 
@@ -191,15 +208,6 @@ function attachListeners() {
         snapshot => {
             gameState =
                 snapshot.val();
-
-            if (
-                gameState?.cardsPerPlayer
-            ) {
-                cardsPerPlayerInput.value =
-                    String(
-                        gameState.cardsPerPlayer
-                    );
-            }
 
             renderPage();
         }
@@ -233,7 +241,11 @@ function renderPage() {
     ) {
         hostSetup.hidden = true;
         playerWaiting.hidden = true;
+        lastRoundPanel.hidden = true;
+
         finalResultPanel.hidden = false;
+        finalHostActions.hidden = !host;
+        finalPlayerWaiting.hidden = host;
 
         renderFinalResult();
         return;
@@ -263,9 +275,16 @@ function renderPage() {
     cardsPerPlayerInput.max =
         String(maximumCards);
 
+    const currentValue =
+        Number(cardsPerPlayerInput.value);
+
     if (
-        Number(cardsPerPlayerInput.value) >
-        maximumCards
+        !Number.isInteger(currentValue) ||
+        currentValue < 1
+    ) {
+        cardsPerPlayerInput.value = "1";
+    } else if (
+        currentValue > maximumCards
     ) {
         cardsPerPlayerInput.value =
             String(maximumCards);
@@ -336,8 +355,8 @@ function renderFinalResult() {
         Object.values(gameScores);
 
     if (scores.length === 0) {
-        finalResult.textContent =
-            "Es gibt noch keine Ergebnisse.";
+        finalResult.innerHTML =
+            "<p>Es gibt noch keine Ergebnisse.</p>";
         return;
     }
 
@@ -362,25 +381,37 @@ function renderFinalResult() {
             .join(", ");
 
     let html = `
-        <p class="winner-text">
-            Gewinner:
+        <div class="winner-card">
+            <span>Gewinner</span>
             <strong>${escapeHtml(winners)}</strong>
-            mit ${highestScore} Punkten
-        </p>
+            <small>${highestScore} Punkte</small>
+        </div>
 
-        <ol class="ranking-list">
+        <div class="final-ranking">
     `;
 
-    for (const player of sortedScores) {
-        html += `
-            <li>
-                <span>${escapeHtml(player.name)}</span>
-                <strong>${player.score ?? 0} Punkte</strong>
-            </li>
-        `;
-    }
+    sortedScores.forEach(
+        (player, index) => {
+            html += `
+                <div class="final-rank-row">
+                    <span class="rank-number">
+                        ${index + 1}
+                    </span>
 
-    html += "</ol>";
+                    <span class="rank-name">
+                        ${escapeHtml(player.name)}
+                    </span>
+
+                    <strong class="rank-points">
+                        ${player.score ?? 0}
+                        Punkte
+                    </strong>
+                </div>
+            `;
+        }
+    );
+
+    html += "</div>";
 
     finalResult.innerHTML = html;
 }
@@ -441,11 +472,20 @@ async function startRound() {
                 player => player.id
             );
 
+        /*
+         * In jeder neuen Runde beginnt der nächste Spieler.
+         */
         const startingPlayerId =
             playerOrder[
                 (roundNumber - 1) %
                 playerOrder.length
             ];
+
+        const tipOrder =
+            rotateOrder(
+                playerOrder,
+                startingPlayerId
+            );
 
         const updates = {};
 
@@ -470,6 +510,7 @@ async function startRound() {
                 name: player.name,
                 tip: 0,
                 tipSubmitted: false,
+                tipError: "",
                 tricksWon: 0,
                 roundPoints: 0,
                 score:
@@ -489,6 +530,9 @@ async function startRound() {
             cardsPerPlayer,
             playerOrder,
             startingPlayerId,
+            tipOrder,
+            currentTipPlayerId:
+                tipOrder[0],
             currentPlayerId:
                 startingPlayerId,
             leadColor: null,
@@ -536,7 +580,7 @@ async function finishGame() {
 
     const confirmed =
         window.confirm(
-            "Soll das gesamte Spiel beendet werden?"
+            "Soll das aktuelle Spiel beendet werden?"
         );
 
     if (!confirmed) {
@@ -556,6 +600,82 @@ async function finishGame() {
 }
 
 
+async function startNewGame() {
+    if (!isHost()) {
+        return;
+    }
+
+    newGameButton.disabled = true;
+
+    try {
+        await update(
+            ref(database),
+            {
+                [`games/${roomCode}/meta/status`]:
+                    "roundSetup",
+
+                [`games/${roomCode}/state`]:
+                    {
+                        status:
+                            "roundSetup",
+                        roundNumber: 0
+                    },
+
+                [`games/${roomCode}/scores`]:
+                    null,
+
+                [`games/${roomCode}/hands`]:
+                    null,
+
+                [`games/${roomCode}/tipRequests`]:
+                    null,
+
+                [`games/${roomCode}/playRequests`]:
+                    null
+            }
+        );
+
+    } catch (error) {
+        console.error(error);
+
+        alert(
+            `Neues Spiel konnte nicht gestartet werden: ${error.message}`
+        );
+
+        newGameButton.disabled = false;
+    }
+}
+
+
+async function endRoom() {
+    if (!isHost()) {
+        return;
+    }
+
+    const confirmed =
+        window.confirm(
+            "Soll der Spielraum beendet und gelöscht werden?"
+        );
+
+    if (!confirmed) {
+        return;
+    }
+
+    await remove(
+        ref(
+            database,
+            `games/${roomCode}`
+        )
+    );
+
+    clearRoomSession();
+
+    window.location.replace(
+        "./index.html"
+    );
+}
+
+
 startRoundButton.addEventListener(
     "click",
     startRound
@@ -564,6 +684,16 @@ startRoundButton.addEventListener(
 finishGameButton.addEventListener(
     "click",
     finishGame
+);
+
+newGameButton.addEventListener(
+    "click",
+    startNewGame
+);
+
+endRoomButton.addEventListener(
+    "click",
+    endRoom
 );
 
 
@@ -578,8 +708,9 @@ onAuthStateChanged(
             } catch (error) {
                 console.error(error);
 
-                firebaseStatus.textContent =
-                    `Seite konnte nicht geladen werden: ${error.message}`;
+                showError(
+                    `Seite konnte nicht geladen werden: ${error.message}`
+                );
             }
 
             return;
@@ -590,8 +721,9 @@ onAuthStateChanged(
         } catch (error) {
             console.error(error);
 
-            firebaseStatus.textContent =
-                `Anmeldung fehlgeschlagen: ${error.message}`;
+            showError(
+                `Anmeldung fehlgeschlagen: ${error.message}`
+            );
         }
     }
 );

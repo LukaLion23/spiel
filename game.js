@@ -14,9 +14,10 @@ import {
 
 import {
     auth,
-    database,
     calculateRoundPoints,
     canPlayCard,
+    clearRoomSession,
+    database,
     determineTrickWinner,
     escapeHtml,
     getNextPlayerId,
@@ -24,7 +25,7 @@ import {
     objectToCards,
     redirectToStatus,
     saveRoomSession
-} from "./firebase-common.js?v=40";
+} from "./firebase-common.js?v=50";
 
 
 let currentUser = null;
@@ -43,6 +44,9 @@ let resultRoundNumber = null;
 let resultInterval = null;
 let resultTransitionTimer = null;
 
+
+const pageError =
+    document.getElementById("pageError");
 
 const roundNumberElement =
     document.getElementById("roundNumber");
@@ -68,9 +72,6 @@ const handHint =
 const handArea =
     document.getElementById("handArea");
 
-const firebaseStatus =
-    document.getElementById("firebaseStatus");
-
 const resultOverlay =
     document.getElementById("resultOverlay");
 
@@ -90,6 +91,12 @@ const resultCountdown =
     document.getElementById("resultCountdown");
 
 
+function showError(message) {
+    pageError.hidden = false;
+    pageError.textContent = message;
+}
+
+
 function isHost() {
     return Boolean(
         currentUser &&
@@ -104,8 +111,9 @@ async function initializePage() {
         getRoomCodeFromUrl();
 
     if (roomCode.length !== 6) {
-        firebaseStatus.textContent =
-            "Kein Spielraum gefunden.";
+        showError(
+            "Kein Spielraum gefunden."
+        );
         return;
     }
 
@@ -131,8 +139,9 @@ async function initializePage() {
         !metaSnapshot.exists() ||
         !playerSnapshot.exists()
     ) {
-        firebaseStatus.textContent =
-            "Du gehörst nicht zu diesem Spiel.";
+        showError(
+            "Du gehörst nicht zu diesem Spiel."
+        );
         return;
     }
 
@@ -153,8 +162,11 @@ function attachListeners() {
         ),
         snapshot => {
             if (!snapshot.exists()) {
-                firebaseStatus.textContent =
-                    "Der Spielraum wurde gelöscht.";
+                clearRoomSession();
+
+                window.location.replace(
+                    "./index.html"
+                );
                 return;
             }
 
@@ -177,6 +189,10 @@ function attachListeners() {
             }
 
             attachHostListener();
+            renderPage();
+        },
+        error => {
+            showError(error.message);
         }
     );
 
@@ -271,14 +287,6 @@ function renderPage() {
     renderTrick();
     renderHand();
 
-    firebaseStatus.textContent =
-        gameState.status === "playing"
-            ? "Spiel läuft."
-            : gameState.status ===
-                "trickResult"
-                ? "Stich wird ausgewertet."
-                : "Runde beendet.";
-
     if (
         gameState.status ===
         "roundResult"
@@ -307,7 +315,8 @@ function renderPlayerOverview() {
 
         const current =
             playerId ===
-            gameState.currentPlayerId;
+            gameState.currentPlayerId &&
+            gameState.status === "playing";
 
         html += `
             <article class="player-stat ${current ? "is-current" : ""}">
@@ -358,11 +367,18 @@ function renderTrick() {
 
                 return `
                     <div class="played-card-wrap">
-                        <span>${escapeHtml(playerName)}</span>
+                        <span>
+                            ${escapeHtml(playerName)}
+                        </span>
 
-                        <div class="card display-card card-${entry.card.color.toLowerCase()}">
-                            <span>${escapeHtml(entry.card.color)}</span>
+                        <div
+                            class="card display-card card-${entry.card.color.toLowerCase()}"
+                            role="img"
+                            aria-label="${escapeHtml(entry.card.color)} ${entry.card.value}"
+                            title="${escapeHtml(entry.card.color)} ${entry.card.value}">
+
                             <strong>${entry.card.value}</strong>
+
                         </div>
                     </div>
                 `;
@@ -427,14 +443,15 @@ function renderHand() {
                 !legal ||
                 playRequestPending;
 
-            let title = "";
+            let title =
+                `${card.color} ${card.value}`;
 
             if (!ownTurn) {
-                title =
-                    "Du bist nicht am Zug.";
+                title +=
+                    " – Du bist nicht am Zug.";
             } else if (!legal) {
-                title =
-                    `Du musst ${gameState.leadColor} bedienen.`;
+                title +=
+                    ` – Du musst ${gameState.leadColor} bedienen.`;
             }
 
             return `
@@ -442,10 +459,10 @@ function renderHand() {
                     type="button"
                     class="card card-${card.color.toLowerCase()}"
                     data-card-id="${escapeHtml(card.id)}"
+                    aria-label="${escapeHtml(card.color)} ${card.value}"
                     ${disabled ? "disabled" : ""}
                     title="${escapeHtml(title)}">
 
-                    <span>${escapeHtml(card.color)}</span>
                     <strong>${card.value}</strong>
 
                 </button>
@@ -910,16 +927,6 @@ async function finishRound(state) {
 
 
 function showResultOverlay() {
-    if (
-        resultRoundNumber ===
-        gameState.roundNumber
-    ) {
-        return;
-    }
-
-    resultRoundNumber =
-        gameState.roundNumber;
-
     const ownScore =
         gameScores[currentUser.uid];
 
@@ -927,6 +934,10 @@ function showResultOverlay() {
         return;
     }
 
+    /*
+     * Werte immer aktualisieren, auch wenn der Score-Listener
+     * nach dem State-Listener ausgelöst wurde.
+     */
     resultTip.textContent =
         String(ownScore.tip ?? 0);
 
@@ -946,6 +957,16 @@ function showResultOverlay() {
         );
 
     resultOverlay.hidden = false;
+
+    if (
+        resultRoundNumber ===
+        gameState.roundNumber
+    ) {
+        return;
+    }
+
+    resultRoundNumber =
+        gameState.roundNumber;
 
     let seconds = 5;
 
@@ -1028,6 +1049,9 @@ async function moveToNextRoundSetup() {
             [`games/${roomCode}/state/currentPlayerId`]:
                 null,
 
+            [`games/${roomCode}/state/currentTipPlayerId`]:
+                null,
+
             [`games/${roomCode}/state/currentTrick`]:
                 [],
 
@@ -1055,8 +1079,9 @@ onAuthStateChanged(
             } catch (error) {
                 console.error(error);
 
-                firebaseStatus.textContent =
-                    `Spiel konnte nicht geladen werden: ${error.message}`;
+                showError(
+                    `Spiel konnte nicht geladen werden: ${error.message}`
+                );
             }
 
             return;
@@ -1067,8 +1092,9 @@ onAuthStateChanged(
         } catch (error) {
             console.error(error);
 
-            firebaseStatus.textContent =
-                `Anmeldung fehlgeschlagen: ${error.message}`;
+            showError(
+                `Anmeldung fehlgeschlagen: ${error.message}`
+            );
         }
     }
 );
