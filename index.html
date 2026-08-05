@@ -7,19 +7,24 @@
         name="viewport"
         content="width=device-width, initial-scale=1.0">
 
-    <title>Online-Kartenspiel</title>
+    <title>Kartenspiel – Eintritt</title>
 
-    <link rel="stylesheet" href="style.css?v=2">
+    <link
+        rel="stylesheet"
+        href="./style.css?v=30">
 </head>
 
 <body>
 
     <h1>Online-Kartenspiel</h1>
 
-    <div class="container">
+    <main class="container">
 
-        <section class="panel" id="lobbyPanel">
-            <h2>Online-Spiel</h2>
+        <section
+            class="panel"
+            id="entryPanel">
+
+            <h2>Spiel erstellen oder beitreten</h2>
 
             <label for="onlinePlayerName">
                 Dein Name:
@@ -37,7 +42,7 @@
                     id="createRoomButton"
                     type="button"
                     disabled>
-                    Spiel erstellen
+                    Neues Spiel erstellen
                 </button>
             </div>
 
@@ -66,132 +71,64 @@
                 Verbindung zu Firebase wird hergestellt …
             </p>
 
+        </section>
+
+        <section
+            class="panel"
+            id="roomPanel"
+            hidden>
+
+            <h2>Warteraum</h2>
+
             <p id="activeRoomCode"></p>
 
             <h3>Spieler im Raum</h3>
+
             <ul id="onlinePlayerList"></ul>
-        </section>
 
-        <section
-            class="panel"
-            id="hostPanel"
-            hidden>
+            <p id="lobbyStatus">
+                Warte auf weitere Spieler …
+            </p>
 
-            <h2>Spielleiter</h2>
+            <div
+                id="hostPanel"
+                hidden>
 
-            <label for="cardsPerPlayer">
-                Karten pro Spieler:
-            </label>
+                <hr>
 
-            <input
-                id="cardsPerPlayer"
-                type="number"
-                min="1"
-                max="40"
-                step="1"
-                value="5">
+                <h3>Spielleiter</h3>
+
+                <label for="cardsPerPlayer">
+                    Karten pro Spieler:
+                </label>
+
+                <input
+                    id="cardsPerPlayer"
+                    type="number"
+                    min="1"
+                    max="40"
+                    step="1"
+                    value="5">
+
+                <button
+                    id="startGameButton"
+                    type="button">
+                    Spiel starten
+                </button>
+
+            </div>
 
             <div class="button-row">
                 <button
-                    id="startRoundButton"
+                    id="leaveRoomButton"
                     type="button">
-                    Runde starten
-                </button>
-
-                <button
-                    id="nextTrickButton"
-                    type="button"
-                    hidden>
-                    Nächster Stich
-                </button>
-
-                <button
-                    id="finishGameButton"
-                    type="button"
-                    hidden>
-                    Spiel beenden
-                </button>
-
-                <button
-                    id="deleteRoomButton"
-                    type="button">
-                    Spielraum löschen
+                    Raum verlassen
                 </button>
             </div>
+
         </section>
 
-        <section
-            class="panel"
-            id="messageArea">
-
-            <h2>Status</h2>
-
-            <p>
-                Noch mit keinem Spielraum verbunden.
-            </p>
-        </section>
-
-        <section
-            class="panel"
-            id="tipsArea"
-            hidden>
-
-            <h2>Tipp abgeben</h2>
-
-            <label for="tipInput">
-                Wie viele Stiche gewinnst du?
-            </label>
-
-            <input
-                id="tipInput"
-                type="number"
-                min="0"
-                step="1"
-                value="0">
-
-            <button
-                id="submitTipButton"
-                type="button">
-                Tipp speichern
-            </button>
-
-            <p id="tipStatus"></p>
-        </section>
-
-        <section
-            class="panel"
-            id="trickArea">
-
-            <h2>Aktueller Stich</h2>
-
-            <p>
-                Noch keine Runde gestartet.
-            </p>
-        </section>
-
-        <section
-            class="panel"
-            id="game">
-
-            <h2>Deine Hand</h2>
-
-            <p>
-                Noch keine Karten ausgeteilt.
-            </p>
-        </section>
-
-        <section
-            class="panel"
-            id="scoreboard">
-
-            <h2>Punktestand</h2>
-
-            <p>
-                Noch keine Spielergebnisse vorhanden.
-            </p>
-        </section>
-
-    </div>
+    </main>
 
     <script type="module">
         const statusElement =
@@ -199,16 +136,16 @@
 
         if (statusElement) {
             statusElement.textContent =
-                "Online-Spiel wird geladen …";
+                "Eintrittsseite wird geladen …";
         }
 
-        import("./firebase.js?v=20")
+        import("./lobby.js?v=30")
             .catch(error => {
                 console.error(error);
 
                 if (statusElement) {
                     statusElement.textContent =
-                        "firebase.js konnte nicht geladen werden: " +
+                        "lobby.js konnte nicht geladen werden: " +
                         error.message;
                 }
             });

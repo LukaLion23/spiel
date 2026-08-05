@@ -1,8 +1,7 @@
 /*
- * Online-Kartenspiel mit Firebase Realtime Database.
+ * Eigentliche Spielseite.
  *
- * Es gibt keinen lokalen Spielmodus.
- * Firebase ist die gemeinsame Datenquelle für alle Geräte.
+ * Der Raumcode wird aus game.html?room=ABC123 gelesen.
  */
 
 import {
@@ -18,11 +17,9 @@ import {
 import {
     get,
     getDatabase,
-    onDisconnect,
     onValue,
     ref,
     remove,
-    runTransaction,
     set,
     update
 } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-database.js";
@@ -53,7 +50,6 @@ const COLORS = [
 ];
 
 const TRUMP_COLOR = "Rot";
-const MAX_PLAYERS = 10;
 
 
 let currentUser = null;
@@ -77,38 +73,29 @@ let processingPlay = false;
 let playRequestPending = false;
 
 
-const firebaseStatus =
-    document.getElementById("firebaseStatus");
-
 const activeRoomCodeElement =
     document.getElementById("activeRoomCode");
 
-const onlinePlayerList =
-    document.getElementById("onlinePlayerList");
+const playerDisplay =
+    document.getElementById("playerDisplay");
 
-const onlinePlayerNameInput =
-    document.getElementById("onlinePlayerName");
-
-const roomCodeInput =
-    document.getElementById("roomCodeInput");
-
-const createRoomButton =
-    document.getElementById("createRoomButton");
-
-const joinRoomButton =
-    document.getElementById("joinRoomButton");
+const firebaseStatus =
+    document.getElementById("firebaseStatus");
 
 const hostPanel =
     document.getElementById("hostPanel");
 
+const nextRoundSettings =
+    document.getElementById("nextRoundSettings");
+
 const cardsPerPlayerInput =
     document.getElementById("cardsPerPlayer");
 
-const startRoundButton =
-    document.getElementById("startRoundButton");
-
 const nextTrickButton =
     document.getElementById("nextTrickButton");
+
+const nextRoundButton =
+    document.getElementById("nextRoundButton");
 
 const finishGameButton =
     document.getElementById("finishGameButton");
@@ -140,18 +127,8 @@ const gameArea =
 const scoreboard =
     document.getElementById("scoreboard");
 
-
-function setFirebaseStatus(message) {
-    firebaseStatus.textContent = message;
-}
-
-
-function setMessage(title, message) {
-    messageArea.innerHTML = `
-        <h2>${escapeHtml(title)}</h2>
-        <p>${escapeHtml(message)}</p>
-    `;
-}
+const backButton =
+    document.getElementById("backButton");
 
 
 function escapeHtml(value) {
@@ -170,54 +147,47 @@ function escapeHtml(value) {
 }
 
 
+function setFirebaseStatus(message) {
+    firebaseStatus.textContent = message;
+}
+
+
+function setMessage(title, message) {
+    messageArea.innerHTML = `
+        <h2>${escapeHtml(title)}</h2>
+        <p>${escapeHtml(message)}</p>
+    `;
+}
+
+
 function cleanRoomCode(value) {
-    return value
+    return String(value)
         .trim()
         .toUpperCase()
         .replace(/[^A-Z0-9]/g, "");
 }
 
 
-function getPlayerName() {
-    return onlinePlayerNameInput.value.trim();
-}
-
-
-function validatePlayerName() {
-    const playerName = getPlayerName();
-
-    if (playerName === "") {
-        alert("Bitte gib deinen Namen ein.");
-        onlinePlayerNameInput.focus();
-        return null;
-    }
-
-    if (playerName.length > 30) {
-        alert(
-            "Der Spielername darf höchstens 30 Zeichen lang sein."
-        );
-        return null;
-    }
-
-    return playerName;
-}
-
-
-function generateRoomCode() {
-    const characters =
-        "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-
-    let code = "";
-
-    for (let index = 0; index < 6; index++) {
-        const randomIndex = Math.floor(
-            Math.random() * characters.length
+function getRoomCode() {
+    const parameters =
+        new URLSearchParams(
+            window.location.search
         );
 
-        code += characters[randomIndex];
+    const queryCode =
+        cleanRoomCode(
+            parameters.get("room") ?? ""
+        );
+
+    if (queryCode.length === 6) {
+        return queryCode;
     }
 
-    return code;
+    return cleanRoomCode(
+        sessionStorage.getItem(
+            "kartenspielRoomCode"
+        ) ?? ""
+    );
 }
 
 
@@ -230,7 +200,7 @@ function isHost() {
 }
 
 
-function getOrderedLobbyPlayers() {
+function getOrderedPlayers() {
     return Object.entries(roomPlayers)
         .sort(
             ([, playerA], [, playerB]) =>
@@ -273,6 +243,17 @@ function shuffle(deck) {
 }
 
 
+function cardsToObject(cards) {
+    const result = {};
+
+    for (const card of cards) {
+        result[card.id] = card;
+    }
+
+    return result;
+}
+
+
 function sortCards(cards) {
     const colorOrder = new Map(
         COLORS.map((color, index) => [
@@ -296,35 +277,28 @@ function sortCards(cards) {
 
 
 function objectToCards(handObject) {
-    if (!handObject) {
-        return [];
-    }
-
     return sortCards(
-        Object.values(handObject)
+        Object.values(
+            handObject ?? {}
+        )
     );
 }
 
 
-function cardsToObject(cards) {
-    const result = {};
-
-    for (const card of cards) {
-        result[card.id] = card;
-    }
-
-    return result;
-}
-
-
-function canPlayCard(handCards, card, leadColor) {
+function canPlayCard(
+    handCards,
+    card,
+    leadColor
+) {
     if (!leadColor) {
         return true;
     }
 
-    const hasLeadColor = handCards.some(
-        handCard => handCard.color === leadColor
-    );
+    const hasLeadColor =
+        handCards.some(
+            handCard =>
+                handCard.color === leadColor
+        );
 
     if (!hasLeadColor) {
         return true;
@@ -334,28 +308,40 @@ function canPlayCard(handCards, card, leadColor) {
 }
 
 
-function determineTrickWinner(trick, leadColor) {
-    const trumpCards = trick.filter(
-        entry => entry.card.color === TRUMP_COLOR
-    );
+function determineTrickWinner(
+    trick,
+    leadColor
+) {
+    const trumpCards =
+        trick.filter(
+            entry =>
+                entry.card.color ===
+                TRUMP_COLOR
+        );
 
     const relevantCards =
         trumpCards.length > 0
             ? trumpCards
             : trick.filter(
-                entry => entry.card.color === leadColor
+                entry =>
+                    entry.card.color ===
+                    leadColor
             );
 
     return relevantCards.reduce(
         (highest, current) =>
-            current.card.value > highest.card.value
+            current.card.value >
+            highest.card.value
                 ? current
                 : highest
     ).playerId;
 }
 
 
-function calculateRoundPoints(tip, tricksWon) {
+function calculateRoundPoints(
+    tip,
+    tricksWon
+) {
     if (tip === tricksWon) {
         return 10 + tricksWon * 5;
     }
@@ -366,272 +352,135 @@ function calculateRoundPoints(tip, tricksWon) {
 }
 
 
-function getNextPlayerId(playerOrder, currentPlayerId) {
+function getNextPlayerId(
+    playerOrder,
+    currentPlayerId
+) {
     const currentIndex =
-        playerOrder.indexOf(currentPlayerId);
+        playerOrder.indexOf(
+            currentPlayerId
+        );
 
-    const nextIndex =
-        (currentIndex + 1) % playerOrder.length;
-
-    return playerOrder[nextIndex];
+    return playerOrder[
+        (currentIndex + 1) %
+        playerOrder.length
+    ];
 }
 
 
-async function createRoom() {
-    const playerName = validatePlayerName();
+async function loadGame() {
+    activeRoomCode =
+        getRoomCode();
 
-    if (!playerName || !currentUser) {
-        return;
-    }
-
-    createRoomButton.disabled = true;
-    joinRoomButton.disabled = true;
-
-    setFirebaseStatus("Spielraum wird erstellt …");
-
-    try {
-        for (let attempt = 0; attempt < 10; attempt++) {
-            const roomCode = generateRoomCode();
-
-            const metaReference = ref(
-                database,
-                `games/${roomCode}/meta`
-            );
-
-            const result = await runTransaction(
-                metaReference,
-                currentMeta => {
-                    if (currentMeta !== null) {
-                        return;
-                    }
-
-                    return {
-                        hostId: currentUser.uid,
-                        status: "lobby",
-                        createdAt: Date.now()
-                    };
-                },
-                {
-                    applyLocally: false
-                }
-            );
-
-            if (!result.committed) {
-                continue;
-            }
-
-            await set(
-                ref(
-                    database,
-                    `games/${roomCode}/lobbyPlayers/${currentUser.uid}`
-                ),
-                {
-                    name: playerName,
-                    joinedAt: Date.now()
-                }
-            );
-
-            await enterRoom(roomCode);
-            return;
-        }
-
-        throw new Error(
-            "Es konnte kein freier Spielcode erzeugt werden."
-        );
-
-    } catch (error) {
-        console.error(error);
-
+    if (activeRoomCode.length !== 6) {
         setFirebaseStatus(
-            `Spielraum konnte nicht erstellt werden: ${error.message}`
+            "Kein gültiger Spielcode gefunden."
         );
 
-    } finally {
-        createRoomButton.disabled = false;
-        joinRoomButton.disabled = false;
-    }
-}
-
-
-async function joinRoom() {
-    const playerName = validatePlayerName();
-
-    if (!playerName || !currentUser) {
-        return;
-    }
-
-    const roomCode =
-        cleanRoomCode(roomCodeInput.value);
-
-    if (roomCode.length !== 6) {
-        alert(
-            "Der Spielcode muss genau 6 Zeichen haben."
+        setMessage(
+            "Kein Spielraum",
+            "Öffne das Spiel über die Eintrittsseite."
         );
 
         return;
     }
 
-    createRoomButton.disabled = true;
-    joinRoomButton.disabled = true;
-
-    setFirebaseStatus("Spielraum wird gesucht …");
-
-    try {
-        const metaSnapshot = await get(
+    const [
+        metaSnapshot,
+        playerSnapshot,
+        stateSnapshot
+    ] = await Promise.all([
+        get(
             ref(
                 database,
-                `games/${roomCode}/meta`
+                `games/${activeRoomCode}/meta`
             )
-        );
-
-        if (!metaSnapshot.exists()) {
-            alert("Dieser Spielraum existiert nicht.");
-            return;
-        }
-
-        const meta = metaSnapshot.val();
-
-        const stateSnapshot = await get(
+        ),
+        get(
             ref(
                 database,
-                `games/${roomCode}/state`
+                `games/${activeRoomCode}/lobbyPlayers/${currentUser.uid}`
             )
-        );
-
-        const state = stateSnapshot.val();
-
-        const isReturningPlayer =
-            Array.isArray(state?.playerOrder) &&
-            state.playerOrder.includes(currentUser.uid);
-
-        if (
-            meta.status !== "lobby" &&
-            !isReturningPlayer
-        ) {
-            alert(
-                "Dieses Spiel wurde bereits gestartet."
-            );
-
-            return;
-        }
-
-        const playersSnapshot = await get(
+        ),
+        get(
             ref(
                 database,
-                `games/${roomCode}/lobbyPlayers`
+                `games/${activeRoomCode}/state`
             )
-        );
+        )
+    ]);
 
-        const players =
-            playersSnapshot.val() ?? {};
-
-        const existingPlayerValues =
-            Object.entries(players)
-                .filter(
-                    ([playerId]) =>
-                        playerId !== currentUser.uid
-                )
-                .map(([, player]) => player);
-
-        if (
-            existingPlayerValues.length >= MAX_PLAYERS
-        ) {
-            alert(
-                "In diesem Spielraum sind bereits 10 Spieler."
-            );
-
-            return;
-        }
-
-        const duplicateName =
-            existingPlayerValues.some(
-                player =>
-                    String(player.name)
-                        .toLowerCase() ===
-                    playerName.toLowerCase()
-            );
-
-        if (duplicateName) {
-            alert(
-                "Dieser Spielername wird bereits verwendet."
-            );
-
-            return;
-        }
-
-        await set(
-            ref(
-                database,
-                `games/${roomCode}/lobbyPlayers/${currentUser.uid}`
-            ),
-            {
-                name: playerName,
-                joinedAt:
-                    players[currentUser.uid]?.joinedAt ??
-                    Date.now()
-            }
-        );
-
-        await enterRoom(roomCode);
-
-    } catch (error) {
-        console.error(error);
-
+    if (!metaSnapshot.exists()) {
         setFirebaseStatus(
-            `Beitritt fehlgeschlagen: ${error.message}`
+            "Der Spielraum existiert nicht."
         );
 
-    } finally {
-        createRoomButton.disabled = false;
-        joinRoomButton.disabled = false;
+        return;
     }
-}
 
+    if (!playerSnapshot.exists()) {
+        setFirebaseStatus(
+            "Du gehörst nicht zu diesem Spielraum."
+        );
 
-async function enterRoom(roomCode) {
-    stopRoomListeners();
+        setMessage(
+            "Kein Zutritt",
+            "Tritt dem Raum zuerst über die Eintrittsseite bei."
+        );
 
-    activeRoomCode = roomCode;
+        return;
+    }
+
+    const meta =
+        metaSnapshot.val();
+
+    if (meta.status === "lobby") {
+        window.location.replace(
+            "./index.html"
+        );
+
+        return;
+    }
+
+    const state =
+        stateSnapshot.val();
+
+    if (
+        !state ||
+        !Array.isArray(state.playerOrder) ||
+        !state.playerOrder.includes(
+            currentUser.uid
+        )
+    ) {
+        setFirebaseStatus(
+            "Du bist kein Teilnehmer dieser Runde."
+        );
+
+        return;
+    }
 
     sessionStorage.setItem(
         "kartenspielRoomCode",
-        roomCode
+        activeRoomCode
     );
-
-    sessionStorage.setItem(
-        "kartenspielPlayerName",
-        getPlayerName()
-    );
-
-    roomCodeInput.value = roomCode;
 
     activeRoomCodeElement.innerHTML = `
-        Aktueller Spielcode:
-        <strong>${escapeHtml(roomCode)}</strong>
+        Spielcode:
+        <strong>${escapeHtml(activeRoomCode)}</strong>
     `;
 
+    playerDisplay.textContent =
+        `Du spielst als ${playerSnapshot.val().name}.`;
+
     setFirebaseStatus(
-        "Mit dem Spielraum verbunden."
+        "Mit dem Spiel verbunden."
     );
 
-    const ownLobbyPlayerReference = ref(
-        database,
-        `games/${roomCode}/lobbyPlayers/${currentUser.uid}`
-    );
-
-    await onDisconnect(
-        ownLobbyPlayerReference
-    ).remove();
-
-    attachRoomListeners();
+    attachListeners();
 }
 
 
-function attachRoomListeners() {
-    if (!activeRoomCode || !currentUser) {
-        return;
-    }
-
+function attachListeners() {
     stopMetaListener = onValue(
         ref(
             database,
@@ -639,11 +488,26 @@ function attachRoomListeners() {
         ),
         snapshot => {
             if (!snapshot.exists()) {
-                handleDeletedRoom();
+                setFirebaseStatus(
+                    "Der Spielraum wurde gelöscht."
+                );
+
+                stopAllListeners();
                 return;
             }
 
-            roomMeta = snapshot.val();
+            roomMeta =
+                snapshot.val();
+
+            if (
+                roomMeta.status === "lobby"
+            ) {
+                window.location.replace(
+                    "./index.html"
+                );
+
+                return;
+            }
 
             renderAll();
             attachHostRequestListeners();
@@ -673,6 +537,15 @@ function attachRoomListeners() {
                 snapshot.val();
 
             playRequestPending = false;
+
+            if (
+                gameState?.cardsPerPlayer
+            ) {
+                cardsPerPlayerInput.value =
+                    String(
+                        gameState.cardsPerPlayer
+                    );
+            }
 
             renderAll();
             attachHostRequestListeners();
@@ -721,7 +594,7 @@ function attachRoomListeners() {
 
 
 function attachHostRequestListeners() {
-    if (!activeRoomCode || !isHost()) {
+    if (!isHost()) {
         stopHostRequestListeners();
         return;
     }
@@ -765,220 +638,41 @@ function stopHostRequestListeners() {
 }
 
 
-function stopRoomListeners() {
+function stopAllListeners() {
     const listeners = [
-        "stopMetaListener",
-        "stopPlayersListener",
-        "stopStateListener",
-        "stopScoresListener",
-        "stopHandListener"
+        stopMetaListener,
+        stopPlayersListener,
+        stopStateListener,
+        stopScoresListener,
+        stopHandListener
     ];
 
-    for (const listenerName of listeners) {
-        const listener = eval(listenerName);
-
-        if (listener) {
-            listener();
-
-            if (listenerName === "stopMetaListener") {
-                stopMetaListener = null;
-            } else if (
-                listenerName === "stopPlayersListener"
-            ) {
-                stopPlayersListener = null;
-            } else if (
-                listenerName === "stopStateListener"
-            ) {
-                stopStateListener = null;
-            } else if (
-                listenerName === "stopScoresListener"
-            ) {
-                stopScoresListener = null;
-            } else if (
-                listenerName === "stopHandListener"
-            ) {
-                stopHandListener = null;
-            }
+    for (const stopListener of listeners) {
+        if (stopListener) {
+            stopListener();
         }
     }
+
+    stopMetaListener = null;
+    stopPlayersListener = null;
+    stopStateListener = null;
+    stopScoresListener = null;
+    stopHandListener = null;
 
     stopHostRequestListeners();
 }
 
 
-function handleDeletedRoom() {
-    stopRoomListeners();
-
-    activeRoomCode = null;
-    roomMeta = null;
-    roomPlayers = {};
-    gameState = null;
-    gameScores = {};
-    ownHand = {};
-
-    sessionStorage.removeItem(
-        "kartenspielRoomCode"
-    );
-
-    activeRoomCodeElement.textContent = "";
-
-    setFirebaseStatus(
-        "Der Spielraum wurde gelöscht."
-    );
-
-    renderAll();
-}
-
-
-async function startRound() {
-    if (!isHost() || !activeRoomCode) {
-        return;
-    }
-
-    if (
-        gameState &&
-        ![
-            "roundResult",
-            "gameFinished"
-        ].includes(gameState.status)
-    ) {
-        alert(
-            "Die aktuelle Runde ist noch nicht beendet."
-        );
-
-        return;
-    }
-
-    const orderedPlayers =
-        getOrderedLobbyPlayers();
-
-    if (orderedPlayers.length < 2) {
-        alert(
-            "Mindestens 2 Spieler erforderlich."
-        );
-
-        return;
-    }
-
-    const cardsPerPlayer =
-        Number(cardsPerPlayerInput.value);
-
-    const maxCardsPerPlayer =
-        Math.floor(
-            80 / orderedPlayers.length
-        );
-
-    if (
-        !Number.isInteger(cardsPerPlayer) ||
-        cardsPerPlayer < 1 ||
-        cardsPerPlayer > maxCardsPerPlayer
-    ) {
-        alert(
-            `Bei ${orderedPlayers.length} Spielern sind ` +
-            `1 bis ${maxCardsPerPlayer} Karten erlaubt.`
-        );
-
-        return;
-    }
-
-    const deck = createDeck();
-    shuffle(deck);
-
-    const previousRoundNumber =
-        gameState?.roundNumber ?? 0;
-
-    const roundNumber =
-        previousRoundNumber + 1;
-
-    const playerOrder =
-        orderedPlayers.map(
-            player => player.id
-        );
-
-    const startingPlayerIndex =
-        (roundNumber - 1) %
-        playerOrder.length;
-
-    const startingPlayerId =
-        playerOrder[startingPlayerIndex];
-
-    const updates = {};
-
-    for (const player of orderedPlayers) {
-        const cards = [];
-
-        for (
-            let index = 0;
-            index < cardsPerPlayer;
-            index++
-        ) {
-            cards.push(deck.pop());
-        }
-
-        updates[
-            `games/${activeRoomCode}/hands/${player.id}`
-        ] = cardsToObject(cards);
-
-        const previousScore =
-            gameScores[player.id]?.score ?? 0;
-
-        updates[
-            `games/${activeRoomCode}/scores/${player.id}`
-        ] = {
-            name: player.name,
-            tip: 0,
-            tipSubmitted: false,
-            tricksWon: 0,
-            roundPoints: 0,
-            score: previousScore,
-            cardCount: cardsPerPlayer
-        };
-    }
-
-    updates[
-        `games/${activeRoomCode}/state`
-    ] = {
-        status: "tips",
-        roundNumber,
-        cardsPerPlayer,
-        playerOrder,
-        startingPlayerId,
-        currentPlayerId: startingPlayerId,
-        leadColor: null,
-        currentTrick: [],
-        lastWinnerId: null,
-        roundWillEnd: false
-    };
-
-    updates[
-        `games/${activeRoomCode}/meta/status`
-    ] = "running";
-
-    updates[
-        `games/${activeRoomCode}/tipRequests`
-    ] = null;
-
-    updates[
-        `games/${activeRoomCode}/playRequests`
-    ] = null;
-
-    await update(
-        ref(database),
-        updates
-    );
-}
-
-
 async function submitTip() {
     if (
-        !activeRoomCode ||
         !gameState ||
         gameState.status !== "tips"
     ) {
         return;
     }
 
-    const tip = Number(tipInput.value);
+    const tip =
+        Number(tipInput.value);
 
     if (
         !Number.isInteger(tip) ||
@@ -1025,8 +719,7 @@ async function submitTip() {
 async function processTipRequests() {
     if (
         processingTips ||
-        !isHost() ||
-        !activeRoomCode
+        !isHost()
     ) {
         return;
     }
@@ -1059,9 +752,12 @@ async function processTipRequests() {
             )
         ]);
 
-        const state = stateSnapshot.val();
+        const state =
+            stateSnapshot.val();
+
         const scores =
             scoresSnapshot.val() ?? {};
+
         const requests =
             requestsSnapshot.val() ?? {};
 
@@ -1076,7 +772,8 @@ async function processTipRequests() {
         let changed = false;
 
         for (
-            const playerId of state.playerOrder
+            const playerId of
+            state.playerOrder
         ) {
             const request =
                 requests[playerId];
@@ -1092,7 +789,8 @@ async function processTipRequests() {
                 continue;
             }
 
-            const tip = Number(request.tip);
+            const tip =
+                Number(request.tip);
 
             if (
                 !Number.isInteger(tip) ||
@@ -1131,7 +829,8 @@ async function processTipRequests() {
         const allTipsSubmitted =
             state.playerOrder.every(
                 playerId =>
-                    scores[playerId]?.tipSubmitted
+                    scores[playerId]
+                        ?.tipSubmitted
             );
 
         if (allTipsSubmitted) {
@@ -1151,7 +850,7 @@ async function processTipRequests() {
 
     } catch (error) {
         console.error(
-            "Fehler beim Verarbeiten der Tipps:",
+            "Tipps konnten nicht verarbeitet werden:",
             error
         );
 
@@ -1163,7 +862,6 @@ async function processTipRequests() {
 
 async function requestPlayCard(cardId) {
     if (
-        !activeRoomCode ||
         !gameState ||
         gameState.status !== "playing" ||
         gameState.currentPlayerId !==
@@ -1228,8 +926,7 @@ async function requestPlayCard(cardId) {
 async function processPlayRequests() {
     if (
         processingPlay ||
-        !isHost() ||
-        !activeRoomCode
+        !isHost()
     ) {
         return;
     }
@@ -1262,9 +959,12 @@ async function processPlayRequests() {
             )
         ]);
 
-        const state = stateSnapshot.val();
+        const state =
+            stateSnapshot.val();
+
         const scores =
             scoresSnapshot.val() ?? {};
+
         const requests =
             requestsSnapshot.val() ?? {};
 
@@ -1334,7 +1034,9 @@ async function processPlayRequests() {
             selectedCard.color;
 
         const currentTrick =
-            Array.isArray(state.currentTrick)
+            Array.isArray(
+                state.currentTrick
+            )
                 ? [...state.currentTrick]
                 : [];
 
@@ -1353,7 +1055,11 @@ async function processPlayRequests() {
                 cardCount:
                     Math.max(
                         0,
-                        (scores[playerId]?.cardCount ?? 1) - 1
+                        (
+                            scores[playerId]
+                                ?.cardCount ??
+                            1
+                        ) - 1
                     )
             }
         };
@@ -1365,7 +1071,8 @@ async function processPlayRequests() {
                     : null,
 
             [`games/${activeRoomCode}/scores/${playerId}/cardCount`]:
-                updatedScores[playerId].cardCount,
+                updatedScores[playerId]
+                    .cardCount,
 
             [`games/${activeRoomCode}/state/leadColor`]:
                 newLeadColor,
@@ -1388,8 +1095,11 @@ async function processPlayRequests() {
                 );
 
             const winnerTricks =
-                (updatedScores[winnerId]?.tricksWon ?? 0) +
-                1;
+                (
+                    updatedScores[winnerId]
+                        ?.tricksWon ??
+                    0
+                ) + 1;
 
             updatedScores[winnerId] = {
                 ...updatedScores[winnerId],
@@ -1399,8 +1109,11 @@ async function processPlayRequests() {
             const roundWillEnd =
                 state.playerOrder.every(
                     id =>
-                        (updatedScores[id]?.cardCount ?? 0) ===
-                        0
+                        (
+                            updatedScores[id]
+                                ?.cardCount ??
+                            0
+                        ) === 0
                 );
 
             updates[
@@ -1439,7 +1152,7 @@ async function processPlayRequests() {
 
     } catch (error) {
         console.error(
-            "Fehler beim Verarbeiten einer Karte:",
+            "Karte konnte nicht verarbeitet werden:",
             error
         );
 
@@ -1452,8 +1165,8 @@ async function processPlayRequests() {
 async function continueAfterTrick() {
     if (
         !isHost() ||
-        !gameState ||
-        gameState.status !== "trickResult"
+        gameState?.status !==
+            "trickResult"
     ) {
         return;
     }
@@ -1494,7 +1207,8 @@ async function finishRound() {
     const updates = {};
 
     for (
-        const playerId of gameState.playerOrder
+        const playerId of
+        gameState.playerOrder
     ) {
         const playerScore =
             scores[playerId];
@@ -1539,11 +1253,120 @@ async function finishRound() {
 }
 
 
-async function finishGame() {
+async function startNextRound() {
     if (
         !isHost() ||
-        !activeRoomCode
+        gameState?.status !==
+            "roundResult"
     ) {
+        return;
+    }
+
+    const players =
+        getOrderedPlayers();
+
+    const cardsPerPlayer =
+        Number(
+            cardsPerPlayerInput.value
+        );
+
+    const maxCards =
+        Math.floor(
+            80 / players.length
+        );
+
+    if (
+        !Number.isInteger(cardsPerPlayer) ||
+        cardsPerPlayer < 1 ||
+        cardsPerPlayer > maxCards
+    ) {
+        alert(
+            `Erlaubt sind 1 bis ${maxCards} Karten.`
+        );
+
+        return;
+    }
+
+    const deck = createDeck();
+    shuffle(deck);
+
+    const playerOrder =
+        players.map(player => player.id);
+
+    const roundNumber =
+        (gameState.roundNumber ?? 0) + 1;
+
+    const startingPlayerId =
+        playerOrder[
+            (roundNumber - 1) %
+            playerOrder.length
+        ];
+
+    const updates = {};
+
+    for (const player of players) {
+        const cards = [];
+
+        for (
+            let index = 0;
+            index < cardsPerPlayer;
+            index++
+        ) {
+            cards.push(deck.pop());
+        }
+
+        updates[
+            `games/${activeRoomCode}/hands/${player.id}`
+        ] = cardsToObject(cards);
+
+        updates[
+            `games/${activeRoomCode}/scores/${player.id}`
+        ] = {
+            name: player.name,
+            tip: 0,
+            tipSubmitted: false,
+            tricksWon: 0,
+            roundPoints: 0,
+            score:
+                gameScores[player.id]
+                    ?.score ??
+                0,
+            cardCount: cardsPerPlayer
+        };
+    }
+
+    updates[
+        `games/${activeRoomCode}/state`
+    ] = {
+        status: "tips",
+        roundNumber,
+        cardsPerPlayer,
+        playerOrder,
+        startingPlayerId,
+        currentPlayerId:
+            startingPlayerId,
+        currentTrick: [],
+        lastWinnerId: null,
+        roundWillEnd: false
+    };
+
+    updates[
+        `games/${activeRoomCode}/tipRequests`
+    ] = null;
+
+    updates[
+        `games/${activeRoomCode}/playRequests`
+    ] = null;
+
+    await update(
+        ref(database),
+        updates
+    );
+}
+
+
+async function finishGame() {
+    if (!isHost()) {
         return;
     }
 
@@ -1561,10 +1384,7 @@ async function finishGame() {
 
 
 async function deleteRoom() {
-    if (
-        !isHost() ||
-        !activeRoomCode
-    ) {
+    if (!isHost()) {
         return;
     }
 
@@ -1586,7 +1406,6 @@ async function deleteRoom() {
 
 
 function renderAll() {
-    renderLobby();
     renderHostControls();
     renderMessage();
     renderTips();
@@ -1596,91 +1415,52 @@ function renderAll() {
 }
 
 
-function renderLobby() {
-    onlinePlayerList.innerHTML = "";
-
-    const orderedPlayers =
-        getOrderedLobbyPlayers();
-
-    for (const player of orderedPlayers) {
-        const listItem =
-            document.createElement("li");
-
-        let label = player.name;
-
-        if (
-            roomMeta &&
-            player.id === roomMeta.hostId
-        ) {
-            label += " (Spielleiter)";
-        }
-
-        if (
-            currentUser &&
-            player.id === currentUser.uid
-        ) {
-            label += " (Du)";
-        }
-
-        listItem.textContent = label;
-        onlinePlayerList.appendChild(listItem);
-    }
-}
-
-
 function renderHostControls() {
-    const host = isHost();
+    const host =
+        isHost();
 
-    hostPanel.hidden = !host;
+    hostPanel.hidden =
+        !host;
 
     if (!host) {
         return;
     }
 
     const status =
-        gameState?.status ?? "lobby";
-
-    startRoundButton.hidden =
-        ![
-            "lobby",
-            "roundResult",
-            "gameFinished"
-        ].includes(status);
-
-    startRoundButton.textContent =
-        status === "lobby"
-            ? "Runde starten"
-            : "Nächste Runde starten";
+        gameState?.status;
 
     nextTrickButton.hidden =
         status !== "trickResult";
 
+    nextRoundButton.hidden =
+        status !== "roundResult";
+
     finishGameButton.hidden =
         status !== "roundResult";
 
-    cardsPerPlayerInput.disabled =
-        ![
-            "lobby",
-            "roundResult",
-            "gameFinished"
-        ].includes(status);
+    nextRoundSettings.hidden =
+        status !== "roundResult";
+
+    const playerCount =
+        gameState?.playerOrder?.length ??
+        getOrderedPlayers().length;
+
+    if (playerCount > 0) {
+        cardsPerPlayerInput.max =
+            String(
+                Math.floor(
+                    80 / playerCount
+                )
+            );
+    }
 }
 
 
 function renderMessage() {
-    if (!activeRoomCode) {
-        setMessage(
-            "Status",
-            "Noch mit keinem Spielraum verbunden."
-        );
-
-        return;
-    }
-
     if (!gameState) {
         setMessage(
-            "Lobby",
-            "Der Spielleiter kann die erste Runde starten."
+            "Status",
+            "Spielzustand wird geladen …"
         );
 
         return;
@@ -1741,7 +1521,9 @@ function renderMessage() {
             const highestScore =
                 Math.max(
                     ...scores.map(
-                        player => player.score ?? 0
+                        player =>
+                            player.score ??
+                            0
                     )
                 );
 
@@ -1749,24 +1531,28 @@ function renderMessage() {
                 scores
                     .filter(
                         player =>
-                            (player.score ?? 0) ===
-                            highestScore
+                            (
+                                player.score ??
+                                0
+                            ) === highestScore
                     )
-                    .map(player => player.name)
+                    .map(
+                        player =>
+                            player.name
+                    )
                     .join(", ");
 
             setMessage(
                 "Spiel beendet",
                 `Gewinner: ${winners} mit ${highestScore} Punkten.`
             );
-
             break;
         }
 
         default:
             setMessage(
                 "Status",
-                "Der Spielzustand wird geladen."
+                "Spielzustand wird geladen …"
             );
     }
 }
@@ -1774,30 +1560,37 @@ function renderMessage() {
 
 function renderTips() {
     const ownScore =
-        gameScores[currentUser?.uid];
+        gameScores[
+            currentUser?.uid
+        ];
 
     const showTips =
         gameState?.status === "tips";
 
-    tipsArea.hidden = !showTips;
+    tipsArea.hidden =
+        !showTips;
 
     if (!showTips) {
         return;
     }
 
     tipInput.max =
-        String(gameState.cardsPerPlayer);
+        String(
+            gameState.cardsPerPlayer
+        );
 
-    const alreadySubmitted =
-        Boolean(ownScore?.tipSubmitted);
+    const submitted =
+        Boolean(
+            ownScore?.tipSubmitted
+        );
 
     tipInput.disabled =
-        alreadySubmitted;
+        submitted;
 
     submitTipButton.disabled =
-        alreadySubmitted;
+        submitted;
 
-    if (alreadySubmitted) {
+    if (submitted) {
         tipInput.value =
             String(ownScore.tip);
 
@@ -1840,8 +1633,9 @@ function renderTrick() {
 
     for (const entry of trick) {
         const playerName =
-            gameScores[entry.playerId]?.name ??
-            "Unbekannt";
+            gameScores[
+                entry.playerId
+            ]?.name ?? "Unbekannt";
 
         html += `
             <p>
@@ -1854,7 +1648,8 @@ function renderTrick() {
         `;
     }
 
-    trickArea.innerHTML = html;
+    trickArea.innerHTML =
+        html;
 }
 
 
@@ -1865,17 +1660,6 @@ function renderHand() {
     const cards =
         objectToCards(ownHand);
 
-    if (!gameState) {
-        html += `
-            <p>
-                Noch keine Runde gestartet.
-            </p>
-        `;
-
-        gameArea.innerHTML = html;
-        return;
-    }
-
     if (cards.length === 0) {
         html += `
             <p>
@@ -1883,12 +1667,15 @@ function renderHand() {
             </p>
         `;
 
-        gameArea.innerHTML = html;
+        gameArea.innerHTML =
+            html;
+
         return;
     }
 
     const ownTurn =
-        gameState.status === "playing" &&
+        gameState?.status ===
+            "playing" &&
         gameState.currentPlayerId ===
             currentUser.uid;
 
@@ -1897,7 +1684,7 @@ function renderHand() {
             canPlayCard(
                 cards,
                 card,
-                gameState.leadColor
+                gameState?.leadColor
             );
 
         const disabled =
@@ -1928,10 +1715,13 @@ function renderHand() {
         `;
     }
 
-    gameArea.innerHTML = html;
+    gameArea.innerHTML =
+        html;
 
     gameArea
-        .querySelectorAll("[data-card-id]")
+        .querySelectorAll(
+            "[data-card-id]"
+        )
         .forEach(button => {
             button.addEventListener(
                 "click",
@@ -1946,14 +1736,14 @@ function renderHand() {
 
 
 function renderScoreboard() {
-    const scores =
+    const entries =
         Object.entries(gameScores);
 
-    if (scores.length === 0) {
+    if (entries.length === 0) {
         scoreboard.innerHTML = `
             <h2>Punktestand</h2>
             <p>
-                Noch keine Spielergebnisse vorhanden.
+                Punktestand wird geladen …
             </p>
         `;
 
@@ -1975,7 +1765,10 @@ function renderScoreboard() {
 
     const orderedIds =
         gameState?.playerOrder ??
-        scores.map(([playerId]) => playerId);
+        entries.map(
+            ([playerId]) =>
+                playerId
+        );
 
     for (const playerId of orderedIds) {
         const player =
@@ -2000,113 +1793,24 @@ function renderScoreboard() {
 
     html += "</table>";
 
-    scoreboard.innerHTML = html;
+    scoreboard.innerHTML =
+        html;
 }
 
 
-async function restoreSavedRoom() {
-    const savedRoomCode =
-        sessionStorage.getItem(
-            "kartenspielRoomCode"
-        );
-
-    const savedPlayerName =
-        sessionStorage.getItem(
-            "kartenspielPlayerName"
-        );
-
-    if (
-        !savedRoomCode ||
-        !savedPlayerName
-    ) {
-        return;
-    }
-
-    onlinePlayerNameInput.value =
-        savedPlayerName;
-
-    roomCodeInput.value =
-        savedRoomCode;
-
-    try {
-        const metaSnapshot = await get(
-            ref(
-                database,
-                `games/${savedRoomCode}/meta`
-            )
-        );
-
-        if (!metaSnapshot.exists()) {
-            sessionStorage.removeItem(
-                "kartenspielRoomCode"
-            );
-
-            return;
-        }
-
-        const stateSnapshot = await get(
-            ref(
-                database,
-                `games/${savedRoomCode}/state`
-            )
-        );
-
-        const state =
-            stateSnapshot.val();
-
-        const mayRestore =
-            metaSnapshot.val().status === "lobby" ||
-            (
-                Array.isArray(state?.playerOrder) &&
-                state.playerOrder.includes(
-                    currentUser.uid
-                )
-            );
-
-        if (!mayRestore) {
-            return;
-        }
-
-        await set(
-            ref(
-                database,
-                `games/${savedRoomCode}/lobbyPlayers/${currentUser.uid}`
-            ),
-            {
-                name: savedPlayerName,
-                joinedAt: Date.now()
-            }
-        );
-
-        await enterRoom(savedRoomCode);
-
-    } catch (error) {
-        console.error(
-            "Spielraum konnte nicht wiederhergestellt werden:",
-            error
-        );
-    }
-}
-
-
-createRoomButton.addEventListener(
+submitTipButton.addEventListener(
     "click",
-    createRoom
-);
-
-joinRoomButton.addEventListener(
-    "click",
-    joinRoom
-);
-
-startRoundButton.addEventListener(
-    "click",
-    startRound
+    submitTip
 );
 
 nextTrickButton.addEventListener(
     "click",
     continueAfterTrick
+);
+
+nextRoundButton.addEventListener(
+    "click",
+    startNextRound
 );
 
 finishGameButton.addEventListener(
@@ -2119,42 +1823,11 @@ deleteRoomButton.addEventListener(
     deleteRoom
 );
 
-submitTipButton.addEventListener(
+backButton.addEventListener(
     "click",
-    submitTip
-);
-
-roomCodeInput.addEventListener(
-    "input",
-    event => {
-        event.target.value =
-            cleanRoomCode(event.target.value);
-    }
-);
-
-roomCodeInput.addEventListener(
-    "keydown",
-    event => {
-        if (event.key === "Enter") {
-            joinRoom();
-        }
-    }
-);
-
-onlinePlayerNameInput.addEventListener(
-    "keydown",
-    event => {
-        if (event.key !== "Enter") {
-            return;
-        }
-
-        if (
-            roomCodeInput.value.trim() === ""
-        ) {
-            createRoom();
-        } else {
-            joinRoom();
-        }
+    () => {
+        window.location.href =
+            "./index.html";
     }
 );
 
@@ -2165,14 +1838,16 @@ onAuthStateChanged(
         if (user) {
             currentUser = user;
 
-            setFirebaseStatus(
-                "Firebase verbunden. Du kannst ein Spiel erstellen oder beitreten."
-            );
+            try {
+                await loadGame();
+            } catch (error) {
+                console.error(error);
 
-            createRoomButton.disabled = false;
-            joinRoomButton.disabled = false;
+                setFirebaseStatus(
+                    `Spiel konnte nicht geladen werden: ${error.message}`
+                );
+            }
 
-            await restoreSavedRoom();
             return;
         }
 
@@ -2180,9 +1855,6 @@ onAuthStateChanged(
             setFirebaseStatus(
                 "Anonyme Anmeldung läuft …"
             );
-
-            createRoomButton.disabled = true;
-            joinRoomButton.disabled = true;
 
             await signInAnonymously(auth);
 

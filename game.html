@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0">
+
+    <title>Kartenspiel – Spiel</title>
+
+    <link
+        rel="stylesheet"
+        href="./style.css?v=30">
+</head>
+
+<body>
+
+    <h1>Online-Kartenspiel</h1>
+
+    <main class="container">
+
+        <section
+            class="panel"
+            id="gameHeader">
+
+            <h2>Spielraum</h2>
+
+            <p id="activeRoomCode"></p>
+
+            <p id="playerDisplay"></p>
+
+            <p id="firebaseStatus">
+                Spiel wird geladen …
+            </p>
+
+        </section>
+
+        <section
+            class="panel"
+            id="hostPanel"
+            hidden>
+
+            <h2>Spielleiter</h2>
+
+            <div
+                id="nextRoundSettings"
+                hidden>
+
+                <label for="cardsPerPlayer">
+                    Karten pro Spieler in der nächsten Runde:
+                </label>
+
+                <input
+                    id="cardsPerPlayer"
+                    type="number"
+                    min="1"
+                    max="40"
+                    step="1"
+                    value="5">
+
+            </div>
+
+            <div class="button-row">
+
+                <button
+                    id="nextTrickButton"
+                    type="button"
+                    hidden>
+                    Nächster Stich
+                </button>
+
+                <button
+                    id="nextRoundButton"
+                    type="button"
+                    hidden>
+                    Nächste Runde starten
+                </button>
+
+                <button
+                    id="finishGameButton"
+                    type="button"
+                    hidden>
+                    Spiel beenden
+                </button>
+
+                <button
+                    id="deleteRoomButton"
+                    type="button">
+                    Spielraum löschen
+                </button>
+
+            </div>
+
+        </section>
+
+        <section
+            class="panel"
+            id="messageArea">
+
+            <h2>Status</h2>
+
+            <p>
+                Spielzustand wird geladen …
+            </p>
+
+        </section>
+
+        <section
+            class="panel"
+            id="tipsArea"
+            hidden>
+
+            <h2>Tipp abgeben</h2>
+
+            <label for="tipInput">
+                Wie viele Stiche gewinnst du?
+            </label>
+
+            <input
+                id="tipInput"
+                type="number"
+                min="0"
+                step="1"
+                value="0">
+
+            <button
+                id="submitTipButton"
+                type="button">
+                Tipp speichern
+            </button>
+
+            <p id="tipStatus"></p>
+
+        </section>
+
+        <section
+            class="panel"
+            id="trickArea">
+
+            <h2>Aktueller Stich</h2>
+
+            <p>
+                Noch keine Karte gespielt.
+            </p>
+
+        </section>
+
+        <section
+            class="panel"
+            id="game">
+
+            <h2>Deine Hand</h2>
+
+            <p>
+                Handkarten werden geladen …
+            </p>
+
+        </section>
+
+        <section
+            class="panel"
+            id="scoreboard">
+
+            <h2>Punktestand</h2>
+
+            <p>
+                Punktestand wird geladen …
+            </p>
+
+        </section>
+
+        <section class="panel">
+            <button
+                id="backButton"
+                type="button">
+                Zur Eintrittsseite
+            </button>
+        </section>
+
+    </main>
+
+    <script type="module">
+        const statusElement =
+            document.getElementById("firebaseStatus");
+
+        if (statusElement) {
+            statusElement.textContent =
+                "Spielseite wird geladen …";
+        }
+
+        import("./game.js?v=30")
+            .catch(error => {
+                console.error(error);
+
+                if (statusElement) {
+                    statusElement.textContent =
+                        "game.js konnte nicht geladen werden: " +
+                        error.message;
+                }
+            });
+    </script>
+
+</body>
+</html>
