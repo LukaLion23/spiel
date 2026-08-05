@@ -121,3 +121,21 @@ UPDATE V54
 WICHTIG:
 Die Regeln aus firebase_regeln.txt müssen vollständig in
 Firebase > Realtime Database > Regeln eingesetzt und veröffentlicht werden.
+
+
+UPDATE V55
+
+- Ein neu erstellter Raum wird nicht mehr während des kurzen
+  Firebase-Ladezustands als leer interpretiert.
+- Die automatische Leeraum-Löschung wartet jetzt 60 Sekunden.
+- Vor der Löschung wird die Spielerliste erneut direkt vom Server gelesen.
+- Sobald wieder ein Spieler vorhanden ist, wird die geplante Löschung
+  abgebrochen.
+- Ein alter Browser-Tab prüft vor jedem Heartbeat, ob der Raum
+  serverseitig noch existiert und ihm weiterhin gehört.
+- Gelöschte Räume können dadurch nicht mehr von einem alten Tab
+  erneut veröffentlicht werden.
+- Bereits veraltete Räume werden beim Rendern sofort ausgeblendet,
+  statt kurz mit einem neuen Raumnamen zu wechseln.
+- Auf der Startseite muss "Version 55" stehen.
+- Cache-Version: ?v=55

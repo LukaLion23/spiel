@@ -25,11 +25,12 @@ import {
     orderedPlayers,
     redirectToStatus,
     saveRoomSession
-} from "./firebase-common.js?v=54";
+} from "./firebase-common.js?v=55";
 
 
 const HEARTBEAT_INTERVAL_MS = 15000;
 const STALE_ROOM_DELETE_AFTER_MS = 120000;
+const EMPTY_ROOM_DELETE_DELAY_MS = 60000;
 
 
 let currentUser = null;
@@ -49,6 +50,8 @@ let publicRoomDisconnect = null;
 
 let lastPublishedPlayerCount = null;
 let heartbeatRunning = false;
+let playersSnapshotLoaded = false;
+let emptyRoomDeleteTimer = null;
 
 const cleanupInProgress =
     new Set();
@@ -302,13 +305,34 @@ function getRoomTimestamp(room) {
 function renderAvailableRooms() {
     availableRoomList.innerHTML = "";
 
+    const now = Date.now();
+
     const roomEntries =
         Object.entries(availableRooms)
             .filter(
-                ([, room]) =>
-                    room &&
-                    room.roomName &&
-                    room.hostId
+                ([, room]) => {
+                    if (
+                        !room ||
+                        !room.roomName ||
+                        !room.hostId
+                    ) {
+                        return false;
+                    }
+
+                    const timestamp =
+                        getRoomTimestamp(room);
+
+                    /*
+                     * Bereits eindeutig veraltete Räume werden
+                     * nicht mehr kurz angezeigt, während ihre
+                     * Löschung im Hintergrund läuft.
+                     */
+                    return (
+                        timestamp > 0 &&
+                        now - timestamp <=
+                            STALE_ROOM_DELETE_AFTER_MS
+                    );
+                }
             )
             .sort(
                 ([, roomA], [, roomB]) =>
@@ -754,6 +778,8 @@ async function enterRoom(
 
     activeRoomCode = roomCode;
     lastPublishedPlayerCount = null;
+    playersSnapshotLoaded = false;
+    cancelEmptyRoomDeletion();
 
     saveRoomSession(
         roomCode,
@@ -834,6 +860,8 @@ async function enterRoom(
             roomPlayers =
                 snapshot.val() ?? {};
 
+            playersSnapshotLoaded = true;
+
             renderLobby();
         }
     );
@@ -844,7 +872,8 @@ async function startHostPresence() {
     if (
         !isHost() ||
         !activeRoomCode ||
-        roomMeta?.status !== "lobby"
+        roomMeta?.status !== "lobby" ||
+        !playersSnapshotLoaded
     ) {
         return;
     }
@@ -968,32 +997,70 @@ async function publishPublicRoom(
         heartbeatRunning ||
         !isHost() ||
         !activeRoomCode ||
-        roomMeta?.status !== "lobby"
+        roomMeta?.status !== "lobby" ||
+        !playersSnapshotLoaded ||
+        playerCount < 1
     ) {
         return;
     }
 
     heartbeatRunning = true;
 
+    const roomCode =
+        activeRoomCode;
+
     try {
+        /*
+         * Vor jedem erneuten Veröffentlichen prüfen,
+         * ob der Raum serverseitig wirklich noch existiert
+         * und diesem Browser weiterhin gehört.
+         * Dadurch kann ein alter Tab keinen gelöschten Raum
+         * wieder in die öffentliche Liste schreiben.
+         */
+        const metaSnapshot =
+            await get(
+                ref(
+                    database,
+                    `games/${roomCode}/meta`
+                )
+            );
+
+        if (!metaSnapshot.exists()) {
+            await stopHostPresence();
+            return;
+        }
+
+        const serverMeta =
+            metaSnapshot.val();
+
+        if (
+            serverMeta.hostId !==
+                currentUser.uid ||
+            serverMeta.status !== "lobby" ||
+            activeRoomCode !== roomCode
+        ) {
+            await stopHostPresence();
+            return;
+        }
+
         await update(
             ref(database),
             {
-                [`games/${activeRoomCode}/meta/lastSeenAt`]:
+                [`games/${roomCode}/meta/lastSeenAt`]:
                     serverTimestamp(),
 
-                [`publicRooms/${activeRoomCode}`]:
+                [`publicRooms/${roomCode}`]:
                     {
                         hostId:
                             currentUser.uid,
                         hostName:
-                            roomMeta.hostName ??
+                            serverMeta.hostName ??
                             getPlayerName(),
                         roomName:
-                            roomMeta.roomName ??
+                            serverMeta.roomName ??
                             "Spielraum",
                         createdAt:
-                            roomMeta.createdAt ??
+                            serverMeta.createdAt ??
                             Date.now(),
                         lastSeenAt:
                             serverTimestamp(),
@@ -1104,17 +1171,22 @@ function renderLobby() {
 
     if (
         host &&
+        playersSnapshotLoaded &&
         players.length === 0
     ) {
-        void deleteEmptyHostRoom();
+        scheduleEmptyRoomDeletion();
+    } else {
+        cancelEmptyRoomDeletion();
     }
 }
 
 
-async function deleteEmptyHostRoom() {
+function scheduleEmptyRoomDeletion() {
     if (
+        emptyRoomDeleteTimer ||
         !isHost() ||
-        !activeRoomCode
+        !activeRoomCode ||
+        !playersSnapshotLoaded
     ) {
         return;
     }
@@ -1122,16 +1194,77 @@ async function deleteEmptyHostRoom() {
     const roomCode =
         activeRoomCode;
 
+    emptyRoomDeleteTimer =
+        window.setTimeout(
+            () => {
+                emptyRoomDeleteTimer = null;
+
+                void deleteEmptyHostRoom(
+                    roomCode
+                );
+            },
+            EMPTY_ROOM_DELETE_DELAY_MS
+        );
+}
+
+
+function cancelEmptyRoomDeletion() {
+    if (!emptyRoomDeleteTimer) {
+        return;
+    }
+
+    window.clearTimeout(
+        emptyRoomDeleteTimer
+    );
+
+    emptyRoomDeleteTimer = null;
+}
+
+
+async function deleteEmptyHostRoom(
+    expectedRoomCode
+) {
+    if (
+        !isHost() ||
+        !activeRoomCode ||
+        activeRoomCode !==
+            expectedRoomCode
+    ) {
+        return;
+    }
+
+    /*
+     * Nach der Wartezeit die Spielerliste direkt vom
+     * Server neu laden. Nur wenn sie dann immer noch
+     * wirklich leer ist, wird der Raum gelöscht.
+     */
+    const playersSnapshot =
+        await get(
+            ref(
+                database,
+                `games/${expectedRoomCode}/lobbyPlayers`
+            )
+        );
+
+    if (
+        playersSnapshot.exists() &&
+        Object.keys(
+            playersSnapshot.val() ?? {}
+        ).length > 0
+    ) {
+        return;
+    }
+
     await stopHostPresence();
 
     try {
         await update(
             ref(database),
             {
-                [`games/${roomCode}`]:
+                [`games/${expectedRoomCode}`]:
                     null,
 
-                [`publicRooms/${roomCode}`]:
+                [`publicRooms/${expectedRoomCode}`]:
                     null
             }
         );
@@ -1141,9 +1274,11 @@ async function deleteEmptyHostRoom() {
             "Leerer Raum konnte nicht gelöscht werden:",
             error
         );
+
+        return;
     }
 
-    resetPage();
+    await resetPage();
 }
 
 
@@ -1164,6 +1299,7 @@ async function prepareGame() {
     }
 
     prepareGameButton.disabled = true;
+    cancelEmptyRoomDeletion();
 
     try {
         await stopHostPresence();
@@ -1216,6 +1352,7 @@ async function leaveRoom() {
     }
 
     if (host) {
+        cancelEmptyRoomDeletion();
         await stopHostPresence();
 
         await update(
@@ -1256,12 +1393,15 @@ function stopRoomListeners() {
 
 
 async function resetPage() {
+    cancelEmptyRoomDeletion();
+
     await stopHostPresence();
     stopRoomListeners();
 
     activeRoomCode = null;
     roomMeta = null;
     roomPlayers = {};
+    playersSnapshotLoaded = false;
     lastPublishedPlayerCount = null;
 
     clearRoomSession();
