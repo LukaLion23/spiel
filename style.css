@@ -1,37 +1,706 @@
-body{
-    font-family: Arial,sans-serif;
-    max-width:1000px;
-    margin:auto;
-    padding:20px;
-    background:#f2f2f2;
+/*
+ * Modernes Design für das Online-Kartenspiel
+ * Diese Datei als style.css speichern.
+ */
+
+:root {
+    --background: #eef3f8;
+    --background-accent: #dfe8f3;
+    --surface: rgba(255, 255, 255, 0.94);
+    --surface-solid: #ffffff;
+    --surface-muted: #f5f7fa;
+
+    --primary: #2956a3;
+    --primary-hover: #1f4380;
+    --primary-light: #e7eefb;
+
+    --success: #218653;
+    --danger: #bd3535;
+    --warning: #b77700;
+
+    --text: #1c2734;
+    --text-muted: #657181;
+    --border: #d6dee8;
+    --border-strong: #b7c4d2;
+
+    --shadow-small: 0 4px 14px rgba(29, 52, 79, 0.08);
+    --shadow-medium: 0 10px 30px rgba(29, 52, 79, 0.13);
+
+    --radius-small: 10px;
+    --radius-medium: 16px;
+    --radius-large: 22px;
+
+    --card-red: #c83e3e;
+    --card-blue: #376fd1;
+    --card-green: #2f985b;
+    --card-yellow: #d49a16;
 }
 
-h1{
-    text-align:center;
+
+/* Grundaufbau */
+
+* {
+    box-sizing: border-box;
 }
 
-.container{
-    background:white;
-    padding:20px;
-    border-radius:10px;
+html {
+    scroll-behavior: smooth;
 }
 
-button{
-    margin:5px;
-    padding:10px;
+body {
+    min-height: 100vh;
+    margin: 0;
+    padding: 32px 18px 60px;
+
+    font-family:
+        Inter,
+        ui-sans-serif,
+        system-ui,
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
+
+    color: var(--text);
+
+    background:
+        radial-gradient(
+            circle at top left,
+            rgba(72, 120, 199, 0.18),
+            transparent 34rem
+        ),
+        linear-gradient(
+            145deg,
+            var(--background),
+            var(--background-accent)
+        );
 }
 
-.player{
-    margin-top:15px;
-    padding:10px;
-    border:1px solid #ccc;
-    border-radius:8px;
+body > h1 {
+    max-width: 1100px;
+    margin: 0 auto 26px;
+
+    font-size: clamp(2rem, 5vw, 3.25rem);
+    line-height: 1.05;
+    text-align: center;
+    letter-spacing: -0.045em;
+
+    color: #17355f;
+
+    text-shadow:
+        0 2px 0 rgba(255, 255, 255, 0.7);
 }
 
-.card{
-    display:inline-block;
-    margin:3px;
-    padding:6px;
-    border-radius:6px;
-    background:#e8e8e8;
+.container {
+    width: min(1100px, 100%);
+    margin: 0 auto;
+
+    display: grid;
+    gap: 18px;
+}
+
+hr {
+    display: none;
+}
+
+
+/* Bereiche */
+
+.panel {
+    position: relative;
+
+    padding: 24px;
+
+    background: var(--surface);
+    border: 1px solid rgba(255, 255, 255, 0.8);
+    border-radius: var(--radius-large);
+
+    box-shadow: var(--shadow-medium);
+    backdrop-filter: blur(12px);
+}
+
+.panel h2 {
+    margin: 0 0 18px;
+
+    font-size: 1.35rem;
+    line-height: 1.2;
+    letter-spacing: -0.025em;
+
+    color: #18385f;
+}
+
+.panel h3 {
+    margin: 22px 0 12px;
+
+    color: #294968;
+}
+
+.panel p {
+    line-height: 1.55;
+}
+
+.panel[hidden] {
+    display: none !important;
+}
+
+
+/* Online-Lobby */
+
+#lobbyPanel {
+    border-top: 5px solid var(--primary);
+}
+
+#firebaseStatus {
+    margin: 18px 0 8px;
+    padding: 12px 14px;
+
+    color: #244a78;
+    background: var(--primary-light);
+    border: 1px solid #c9d8f2;
+    border-radius: var(--radius-small);
+
+    font-weight: 600;
+}
+
+#activeRoomCode {
+    min-height: 1.5em;
+    margin: 10px 0;
+
+    font-size: 1.05rem;
+}
+
+#activeRoomCode strong {
+    display: inline-block;
+    margin-left: 6px;
+    padding: 5px 10px;
+
+    color: #173d72;
+    background: #e8f0ff;
+    border: 1px solid #bfd0ed;
+    border-radius: 8px;
+
+    font-family:
+        "SFMono-Regular",
+        Consolas,
+        "Liberation Mono",
+        monospace;
+
+    letter-spacing: 0.12em;
+}
+
+
+/* Formulare */
+
+label {
+    display: block;
+    margin: 0 0 7px;
+
+    color: #35485d;
+
+    font-size: 0.95rem;
+    font-weight: 700;
+}
+
+input {
+    width: 100%;
+    max-width: 440px;
+
+    margin: 0 0 13px;
+    padding: 12px 14px;
+
+    color: var(--text);
+    background: var(--surface-solid);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-small);
+
+    font: inherit;
+    font-size: 1rem;
+
+    outline: none;
+
+    transition:
+        border-color 160ms ease,
+        box-shadow 160ms ease,
+        transform 160ms ease;
+}
+
+input:hover {
+    border-color: #8fa4bc;
+}
+
+input:focus {
+    border-color: var(--primary);
+
+    box-shadow:
+        0 0 0 4px rgba(41, 86, 163, 0.13);
+}
+
+input:disabled {
+    color: #7e8895;
+    background: #edf1f5;
+    cursor: not-allowed;
+}
+
+#roomCodeInput {
+    text-transform: uppercase;
+    letter-spacing: 0.13em;
+    font-family:
+        "SFMono-Regular",
+        Consolas,
+        "Liberation Mono",
+        monospace;
+}
+
+
+/* Buttons */
+
+button {
+    min-height: 43px;
+    padding: 10px 17px;
+
+    color: #ffffff;
+    background: var(--primary);
+    border: 0;
+    border-radius: var(--radius-small);
+
+    font: inherit;
+    font-weight: 750;
+
+    cursor: pointer;
+
+    box-shadow:
+        0 4px 10px rgba(31, 67, 128, 0.18);
+
+    transition:
+        background 150ms ease,
+        transform 150ms ease,
+        box-shadow 150ms ease,
+        opacity 150ms ease;
+}
+
+button:hover:not(:disabled) {
+    background: var(--primary-hover);
+
+    transform: translateY(-1px);
+
+    box-shadow:
+        0 7px 14px rgba(31, 67, 128, 0.23);
+}
+
+button:active:not(:disabled) {
+    transform: translateY(0);
+}
+
+button:focus-visible {
+    outline: 3px solid rgba(41, 86, 163, 0.25);
+    outline-offset: 3px;
+}
+
+button:disabled {
+    color: #7a8490;
+    background: #dfe4ea;
+
+    cursor: not-allowed;
+    box-shadow: none;
+    opacity: 0.82;
+}
+
+.button-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+
+    margin: 4px 0 14px;
+}
+
+#deleteRoomButton {
+    background: var(--danger);
+}
+
+#deleteRoomButton:hover:not(:disabled) {
+    background: #982828;
+}
+
+#finishGameButton {
+    background: var(--success);
+}
+
+#finishGameButton:hover:not(:disabled) {
+    background: #17683e;
+}
+
+#nextTrickButton {
+    background: var(--warning);
+}
+
+#nextTrickButton:hover:not(:disabled) {
+    background: #8f5c00;
+}
+
+
+/* Spielerliste */
+
+#onlinePlayerList {
+    display: grid;
+    grid-template-columns:
+        repeat(auto-fit, minmax(190px, 1fr));
+
+    gap: 10px;
+
+    margin: 0;
+    padding: 0;
+
+    list-style: none;
+}
+
+#onlinePlayerList li {
+    position: relative;
+
+    padding: 12px 14px 12px 39px;
+
+    color: #283c52;
+    background: var(--surface-muted);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-small);
+
+    font-weight: 700;
+}
+
+#onlinePlayerList li::before {
+    content: "";
+
+    position: absolute;
+    top: 50%;
+    left: 15px;
+
+    width: 11px;
+    height: 11px;
+
+    background: var(--success);
+    border: 3px solid #d6f0e3;
+    border-radius: 50%;
+
+    transform: translateY(-50%);
+}
+
+
+/* Status */
+
+#messageArea {
+    overflow: hidden;
+
+    border-left: 5px solid var(--primary);
+}
+
+#messageArea p {
+    margin-bottom: 0;
+
+    font-size: 1.06rem;
+    font-weight: 600;
+}
+
+
+/* Tipps */
+
+#tipsArea {
+    border-left: 5px solid var(--warning);
+}
+
+#tipStatus {
+    margin-top: 12px;
+
+    color: var(--text-muted);
+    font-weight: 650;
+}
+
+
+/* Aktueller Stich */
+
+#trickArea {
+    min-height: 150px;
+
+    border-left: 5px solid #7555bd;
+}
+
+#trickArea p {
+    margin: 8px 0;
+    padding: 9px 12px;
+
+    background: #f5f2fd;
+    border: 1px solid #dfd6f5;
+    border-radius: 9px;
+}
+
+
+/* Handkarten */
+
+#game {
+    border-left: 5px solid var(--success);
+}
+
+#game .card {
+    position: relative;
+
+    min-width: 105px;
+    min-height: 145px;
+
+    margin: 7px;
+    padding: 16px 12px;
+
+    vertical-align: top;
+
+    color: #ffffff;
+    border: 2px solid rgba(255, 255, 255, 0.55);
+    border-radius: 15px;
+
+    font-size: 1.05rem;
+    font-weight: 850;
+
+    box-shadow:
+        0 8px 17px rgba(24, 38, 53, 0.18);
+
+    overflow: hidden;
+}
+
+#game .card::after {
+    content: "";
+
+    position: absolute;
+    inset: 8px;
+
+    border: 1px solid rgba(255, 255, 255, 0.38);
+    border-radius: 10px;
+
+    pointer-events: none;
+}
+
+#game .card:hover:not(:disabled) {
+    transform:
+        translateY(-8px)
+        rotate(-1deg);
+
+    box-shadow:
+        0 15px 25px rgba(24, 38, 53, 0.25);
+}
+
+#game .card:disabled {
+    filter: grayscale(0.45);
+    opacity: 0.5;
+}
+
+.card-rot {
+    background:
+        linear-gradient(
+            145deg,
+            #df5656,
+            var(--card-red)
+        );
+}
+
+.card-blau {
+    background:
+        linear-gradient(
+            145deg,
+            #5088e5,
+            var(--card-blue)
+        );
+}
+
+.card-grün {
+    background:
+        linear-gradient(
+            145deg,
+            #46ac70,
+            var(--card-green)
+        );
+}
+
+.card-gelb {
+    color: #352800 !important;
+
+    background:
+        linear-gradient(
+            145deg,
+            #f0bd3d,
+            var(--card-yellow)
+        );
+}
+
+.card-gelb::after {
+    border-color:
+        rgba(72, 55, 0, 0.25) !important;
+}
+
+
+/* Punktetabelle */
+
+#scoreboard {
+    overflow-x: auto;
+
+    border-left: 5px solid #3d7896;
+}
+
+table {
+    width: 100%;
+    min-width: 650px;
+
+    border-spacing: 0;
+    border-collapse: separate;
+
+    overflow: hidden;
+
+    background: var(--surface-solid);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-medium);
+}
+
+th,
+td {
+    padding: 13px 14px;
+
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+}
+
+th {
+    color: #ffffff;
+    background: #274c76;
+
+    font-size: 0.9rem;
+    letter-spacing: 0.02em;
+}
+
+td {
+    color: #34465a;
+}
+
+tbody tr:nth-child(even),
+tr:nth-child(even) td {
+    background: #f6f8fb;
+}
+
+tr:last-child td {
+    border-bottom: 0;
+}
+
+
+/* Desktop-Anordnung */
+
+@media (min-width: 850px) {
+    #lobbyPanel,
+    #hostPanel,
+    #messageArea,
+    #tipsArea,
+    #trickArea,
+    #game,
+    #scoreboard {
+        width: 100%;
+    }
+
+    #hostPanel .button-row {
+        align-items: center;
+    }
+
+    #cardsPerPlayer {
+        width: 150px;
+    }
+
+    #tipInput {
+        width: 150px;
+    }
+}
+
+
+/* Smartphone */
+
+@media (max-width: 650px) {
+    body {
+        padding:
+            20px
+            10px
+            40px;
+    }
+
+    body > h1 {
+        margin-bottom: 18px;
+    }
+
+    .container {
+        gap: 12px;
+    }
+
+    .panel {
+        padding: 18px 15px;
+
+        border-radius: var(--radius-medium);
+    }
+
+    input {
+        max-width: none;
+    }
+
+    button:not(.card) {
+        width: 100%;
+    }
+
+    .button-row {
+        display: grid;
+        grid-template-columns: 1fr;
+    }
+
+    #onlinePlayerList {
+        grid-template-columns: 1fr;
+    }
+
+    #game {
+        text-align: center;
+    }
+
+    #game h2,
+    #game p {
+        text-align: left;
+    }
+
+    #game .card {
+        min-width: 88px;
+        min-height: 125px;
+
+        margin: 5px;
+        padding: 13px 9px;
+
+        font-size: 0.94rem;
+    }
+
+    th,
+    td {
+        padding: 11px 10px;
+
+        font-size: 0.9rem;
+    }
+}
+
+
+/* Sehr kleine Displays */
+
+@media (max-width: 390px) {
+    #game .card {
+        min-width: 79px;
+        min-height: 116px;
+
+        margin: 4px;
+        font-size: 0.88rem;
+    }
+}
+
+
+/* Bewegungen reduzieren, wenn im Betriebssystem aktiviert */
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        scroll-behavior: auto !important;
+        transition: none !important;
+        animation: none !important;
+    }
 }
