@@ -25,7 +25,7 @@ import {
     orderedPlayers,
     redirectToStatus,
     saveRoomSession
-} from "./firebase-common.js?v=56";
+} from "./firebase-common.js?v=58";
 
 
 const HEARTBEAT_INTERVAL_MS = 15000;
@@ -43,6 +43,7 @@ let stopMetaListener = null;
 let stopPlayersListener = null;
 let stopAvailableRoomsListener = null;
 let stopConnectionListener = null;
+let stopServerTimeOffsetListener = null;
 
 let heartbeatTimer = null;
 let presenceRoomCode = null;
@@ -52,6 +53,7 @@ let lastPublishedPlayerCount = null;
 let heartbeatRunning = false;
 let playersSnapshotLoaded = false;
 let emptyRoomDeleteTimer = null;
+let serverTimeOffsetMs = null;
 
 const cleanupInProgress =
     new Set();
@@ -225,6 +227,59 @@ function isHost() {
 }
 
 
+function startServerTimeListener() {
+    if (stopServerTimeOffsetListener) {
+        return;
+    }
+
+    stopServerTimeOffsetListener = onValue(
+        ref(
+            database,
+            ".info/serverTimeOffset"
+        ),
+        snapshot => {
+            const offset =
+                Number(snapshot.val());
+
+            serverTimeOffsetMs =
+                Number.isFinite(offset)
+                    ? offset
+                    : 0;
+
+            /*
+             * Sobald die Serverzeit bekannt ist,
+             * wird die aktuelle Raumliste neu bewertet.
+             */
+            renderAvailableRooms();
+            void cleanupStaleRooms();
+        },
+        error => {
+            console.error(
+                "Firebase-Serverzeit konnte nicht geladen werden:",
+                error
+            );
+
+            /*
+             * Räume lieber anzeigen als wegen einer
+             * unsicheren Zeitberechnung auszublenden.
+             */
+            serverTimeOffsetMs = null;
+            renderAvailableRooms();
+        }
+    );
+}
+
+
+function getServerNow() {
+    if (!Number.isFinite(serverTimeOffsetMs)) {
+        return null;
+    }
+
+    return Date.now() +
+        serverTimeOffsetMs;
+}
+
+
 function startAvailableRoomsListener() {
     if (stopAvailableRoomsListener) {
         return;
@@ -305,7 +360,8 @@ function getRoomTimestamp(room) {
 function renderAvailableRooms() {
     availableRoomList.innerHTML = "";
 
-    const now = Date.now();
+    const serverNow =
+        getServerNow();
 
     const roomEntries =
         Object.entries(availableRooms)
@@ -322,14 +378,21 @@ function renderAvailableRooms() {
                     const timestamp =
                         getRoomTimestamp(room);
 
+                    if (timestamp <= 0) {
+                        return false;
+                    }
+
                     /*
-                     * Bereits eindeutig veraltete Räume werden
-                     * nicht mehr kurz angezeigt, während ihre
-                     * Löschung im Hintergrund läuft.
+                     * Solange die Firebase-Serverzeit noch
+                     * nicht geladen ist, werden Räume nicht
+                     * aufgrund der lokalen Geräteuhr verborgen.
                      */
+                    if (serverNow === null) {
+                        return true;
+                    }
+
                     return (
-                        timestamp > 0 &&
-                        now - timestamp <=
+                        serverNow - timestamp <=
                             STALE_ROOM_DELETE_AFTER_MS
                     );
                 }
@@ -404,7 +467,17 @@ function renderAvailableRooms() {
 
 
 async function cleanupStaleRooms() {
-    const now = Date.now();
+    const serverNow =
+        getServerNow();
+
+    /*
+     * Ohne bekannte Firebase-Serverzeit wird nichts
+     * automatisch gelöscht. So kann eine falsch gestellte
+     * Geräteuhr keinen gültigen Raum entfernen.
+     */
+    if (serverNow === null) {
+        return;
+    }
 
     const staleRoomCodes =
         Object.entries(availableRooms)
@@ -414,7 +487,7 @@ async function cleanupStaleRooms() {
 
                 return (
                     timestamp === 0 ||
-                    now - timestamp >
+                    serverNow - timestamp >
                         STALE_ROOM_DELETE_AFTER_MS
                 );
             })
@@ -1549,6 +1622,7 @@ onAuthStateChanged(
             );
 
             setEntryDisabled(false);
+            startServerTimeListener();
             startAvailableRoomsListener();
 
             try {

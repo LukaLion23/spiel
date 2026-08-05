@@ -24,7 +24,7 @@ import {
     rotateOrder,
     saveRoomSession,
     shuffle
-} from "./firebase-common.js?v=56";
+} from "./firebase-common.js?v=58";
 
 
 let currentUser = null;

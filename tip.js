@@ -17,12 +17,13 @@ import {
     database,
     escapeHtml,
     getCardColorClass,
+    getCardImagePath,
     getRoomCodeFromUrl,
     objectToCards,
     redirectToStatus,
     rotateOrder,
     saveRoomSession
-} from "./firebase-common.js?v=56";
+} from "./firebase-common.js?v=58";
 
 
 let currentUser = null;
@@ -496,6 +497,13 @@ function renderHand() {
                 role="img"
                 aria-label="${escapeHtml(card.color)} ${card.value}"
                 title="${escapeHtml(card.color)} ${card.value}">
+
+                <img
+                    class="card-color-image"
+                    src="${getCardImagePath(card.color)}"
+                    alt=""
+                    aria-hidden="true"
+                    draggable="false">
 
                 <strong>${card.value}</strong>
 

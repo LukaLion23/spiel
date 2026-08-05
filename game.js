@@ -21,13 +21,14 @@ import {
     determineTrickWinner,
     escapeHtml,
     getCardColorClass,
+    getCardImagePath,
     getNextPlayerId,
     getRoomCodeFromUrl,
     normalizeColor,
     objectToCards,
     redirectToStatus,
     saveRoomSession
-} from "./firebase-common.js?v=56";
+} from "./firebase-common.js?v=58";
 
 
 let currentUser = null;
@@ -419,6 +420,13 @@ function renderTrick() {
                             aria-label="${escapeHtml(cardColor)} ${entry.card.value}"
                             title="${escapeHtml(cardColor)} ${entry.card.value}">
 
+                            <img
+                                class="card-color-image"
+                                src="${getCardImagePath(cardColor)}"
+                                alt=""
+                                aria-hidden="true"
+                                draggable="false">
+
                             <strong>${entry.card.value}</strong>
 
                         </div>
@@ -508,6 +516,13 @@ function renderHand() {
                     aria-label="${escapeHtml(card.color)} ${card.value}"
                     ${disabled ? "disabled" : ""}
                     title="${escapeHtml(title)}">
+
+                    <img
+                        class="card-color-image"
+                        src="${getCardImagePath(card.color)}"
+                        alt=""
+                        aria-hidden="true"
+                        draggable="false">
 
                     <strong>${card.value}</strong>
 

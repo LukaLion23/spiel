@@ -152,3 +152,39 @@ UPDATE V56
   Elemente nicht mehr versehentlich sichtbar machen.
 - Auf der Startseite muss "Version 56" stehen.
 - Cache-Version: ?v=56
+
+
+UPDATE V57
+
+- Die vier Kartenfarben werden als echte PNG-Dateien dargestellt.
+- Die PNG-Dateien liegen unter assets/cards/.
+- CSS-Auto-Dark-Algorithmen können die Kartenfarbe dadurch nicht mehr
+  wie eine normale Hintergrundfarbe neu berechnen.
+- Dark Reader wird mit <meta name="darkreader-lock"> ausdrücklich gesperrt.
+- Hover verändert nur die Kartenposition, niemals die Kartenfarbe.
+- Deaktivierte Karten werden nur transparenter.
+- Die Zahl bleibt mittig auf der Karte.
+- Auf der Startseite muss "Version 57" stehen.
+- Cache-Version: ?v=57
+
+WICHTIG:
+Der Ordner assets muss zusammen mit allen Dateien zu GitHub hochgeladen
+werden. Fehlt assets/cards, werden die Kartenbilder nicht angezeigt.
+
+Ein vom Browser oder Betriebssystem erzwungener globaler Bildschirmfilter
+kann von einer Webseite nicht in jedem Browser vollständig abgeschaltet
+werden. In diesem Fall muss für die Website eine Ausnahme vom automatischen
+Dunkelmodus eingestellt werden.
+
+
+UPDATE V58
+
+- Die Gültigkeit offener Räume wird nicht mehr mit der lokalen Uhr
+  von Handy oder Laptop berechnet.
+- Stattdessen wird .info/serverTimeOffset von Firebase verwendet.
+- Eine vor- oder nachgehende Geräteuhr kann dadurch keinen Raum mehr
+  ausblenden oder als veraltet löschen.
+- Solange die Firebase-Serverzeit noch nicht geladen ist, werden Räume
+  vorsichtshalber angezeigt und nicht automatisch gelöscht.
+- Auf Handy und Laptop muss unten "Version 58" stehen.
+- Cache-Version: ?v=58

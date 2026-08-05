@@ -83,6 +83,22 @@ export function getCardColorClass(color) {
 }
 
 
+export function getCardImagePath(color) {
+    const normalizedColor =
+        normalizeColor(color);
+
+    const imageByColor = {
+        Rot: "./assets/cards/rot.png?v=57",
+        Blau: "./assets/cards/blau.png?v=57",
+        "Grün": "./assets/cards/gruen.png?v=57",
+        Gelb: "./assets/cards/gelb.png?v=57"
+    };
+
+    return imageByColor[normalizedColor] ??
+        "./assets/cards/blau.png?v=57";
+}
+
+
 export function escapeHtml(value) {
     const characters = {
         "&": "&amp;",
