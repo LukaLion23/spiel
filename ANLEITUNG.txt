@@ -139,3 +139,16 @@ UPDATE V55
   statt kurz mit einem neuen Raumnamen zu wechseln.
 - Auf der Startseite muss "Version 55" stehen.
 - Cache-Version: ?v=55
+
+
+UPDATE V56
+
+- Die Schaltflächen "Neues Spiel" und "Beenden" werden am Spielende
+  ausschließlich beim Spielleiter angezeigt.
+- Andere Spieler sehen stattdessen nur den Hinweis, dass der Spielleiter
+  über den weiteren Ablauf entscheidet.
+- Die allgemeine CSS-Regel für das HTML-Attribut hidden wurde korrigiert.
+  Dadurch können display:grid- oder display:flex-Regeln versteckte
+  Elemente nicht mehr versehentlich sichtbar machen.
+- Auf der Startseite muss "Version 56" stehen.
+- Cache-Version: ?v=56

@@ -2200,3 +2200,27 @@ button.card:disabled {
     border-color: #d8e0e8 !important;
     opacity: 0.72;
 }
+
+
+/* =========================================================
+   Update v56 – Spielleiter-Schaltflächen ausblenden
+   ========================================================= */
+
+/*
+ * Das HTML-Attribut hidden muss auch bei Elementen gelten,
+ * deren normale CSS-Klasse display:grid oder display:flex setzt.
+ */
+[hidden] {
+    display: none !important;
+}
+
+/*
+ * Zusätzliche eindeutige Absicherung für das Spielende:
+ * Nur der Spielleiter sieht "Neues Spiel" und "Beenden".
+ */
+.final-actions[hidden],
+.final-waiting[hidden],
+#hostSetup[hidden],
+#hostControls[hidden] {
+    display: none !important;
+}

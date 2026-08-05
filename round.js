@@ -24,7 +24,7 @@ import {
     rotateOrder,
     saveRoomSession,
     shuffle
-} from "./firebase-common.js?v=55";
+} from "./firebase-common.js?v=56";
 
 
 let currentUser = null;
@@ -316,6 +316,8 @@ function renderPage() {
     }
 
     finalResultPanel.hidden = true;
+    finalHostActions.hidden = true;
+    finalPlayerWaiting.hidden = true;
 
     hostSetup.hidden = !host;
     playerWaiting.hidden = host;
