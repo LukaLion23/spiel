@@ -1774,3 +1774,408 @@ button.card:disabled {
 .trick-panel.trick-color-gelb {
     border-color: var(--card-yellow-end);
 }
+
+
+/* =========================================================
+   Update v53 – Raumliste, heller Modus und Stichdarstellung
+   ========================================================= */
+
+:root,
+html,
+body {
+    color-scheme: only light !important;
+}
+
+html {
+    background-color: #eef3f8 !important;
+}
+
+body {
+    color: #1c2734 !important;
+    background-color: #eef3f8 !important;
+}
+
+/*
+ * Einige mobile Browser versuchen Webseiten trotz
+ * color-scheme automatisch umzufärben. Die Spielflächen
+ * und Karten behalten deshalb ausdrücklich ihre Farben.
+ */
+
+body,
+.panel,
+input,
+button,
+.card,
+.trick-panel,
+.played-card-wrap,
+.result-dialog {
+    forced-color-adjust: none !important;
+}
+
+.panel,
+.result-dialog {
+    color: #1c2734 !important;
+    background-color: #ffffff !important;
+}
+
+input {
+    color: #1c2734 !important;
+    background-color: #ffffff !important;
+}
+
+/* Raumübersicht */
+
+.create-room-area,
+.room-browser {
+    margin-top: 26px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+}
+
+.room-browser-heading {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 14px;
+    margin-bottom: 14px;
+}
+
+.room-browser-heading h2 {
+    margin-bottom: 5px;
+}
+
+.room-browser-heading p {
+    margin: 0;
+    color: var(--text-muted);
+}
+
+.compact-button {
+    min-height: 38px;
+    padding: 8px 12px;
+    white-space: nowrap;
+}
+
+.available-room-list {
+    display: grid;
+    gap: 11px;
+}
+
+.room-entry {
+    display: grid;
+    grid-template-columns:
+        minmax(0, 1fr)
+        auto;
+    align-items: center;
+    gap: 16px;
+    width: 100%;
+    min-height: 76px;
+    padding: 14px 16px;
+    text-align: left;
+    color: #1c334d !important;
+    background: #f7f9fc !important;
+    border: 2px solid #d5deea;
+    border-radius: var(--radius-medium);
+    box-shadow: none;
+}
+
+.room-entry:hover:not(:disabled) {
+    color: #17365f !important;
+    background: #edf4ff !important;
+    border-color: var(--primary);
+    transform: translateY(-1px);
+    box-shadow:
+        0 7px 18px
+        rgba(41, 86, 163, 0.13);
+}
+
+.room-entry-main {
+    min-width: 0;
+}
+
+.room-entry-main strong {
+    display: block;
+    overflow-wrap: anywhere;
+    font-size: 1.05rem;
+}
+
+.room-entry-main small,
+.room-entry-side small {
+    display: block;
+    margin-top: 4px;
+    color: var(--text-muted);
+    font-weight: 650;
+}
+
+.room-entry-side {
+    display: grid;
+    justify-items: end;
+    gap: 7px;
+}
+
+.join-room-label {
+    display: inline-block;
+    padding: 6px 10px;
+    color: #ffffff;
+    background: var(--primary);
+    border-radius: 999px;
+    font-size: 0.82rem;
+    font-weight: 800;
+}
+
+.empty-room-message {
+    margin: 12px 0 0;
+    padding: 14px;
+    text-align: center;
+    color: var(--text-muted);
+    background: var(--surface-muted);
+    border-radius: var(--radius-small);
+}
+
+.active-room-name {
+    padding: 13px 15px;
+    color: #244a78;
+    background: var(--primary-light);
+    border: 1px solid #c9d8f2;
+    border-radius: var(--radius-small);
+}
+
+.active-room-name strong {
+    overflow-wrap: anywhere;
+}
+
+/*
+ * Der alte lilafarbene linke Balken gehörte zum
+ * ursprünglichen #trickArea-Design und wird entfernt.
+ */
+
+#trickArea {
+    min-height: 0 !important;
+    border-left: 0 !important;
+    border-inline-start: 0 !important;
+}
+
+#trickArea::before,
+#trickArea::after {
+    display: none !important;
+}
+
+.trick-panel {
+    border-left-width: 4px !important;
+}
+
+/*
+ * Bei der Stichauswertung entfernt game.js sämtliche
+ * Farbrahmen. Nur die Gewinnerkarte wird hervorgehoben.
+ */
+
+/* Feste Kartenfarben ohne automatische Farbverschiebung. */
+
+.card,
+button.card,
+.display-card {
+    color-scheme: only light !important;
+    background-image: none !important;
+    filter: none;
+    mix-blend-mode: normal;
+    isolation: isolate;
+    opacity: 1;
+}
+
+.card-rot,
+button.card-rot,
+.display-card.card-rot {
+    --card-solid: #cf2e2e;
+    --card-edge: #851515;
+
+    color: #ffffff !important;
+    background:
+        #cf2e2e !important;
+    background-color:
+        #cf2e2e !important;
+    background-image:
+        none !important;
+    border-color:
+        #851515 !important;
+}
+
+.card-blau,
+button.card-blau,
+.display-card.card-blau {
+    --card-solid: #2e6bd1;
+    --card-edge: #17458f;
+
+    color: #ffffff !important;
+    background:
+        #2e6bd1 !important;
+    background-color:
+        #2e6bd1 !important;
+    background-image:
+        none !important;
+    border-color:
+        #17458f !important;
+}
+
+.card-gruen,
+.card-grün,
+button.card-gruen,
+button.card-grün,
+.display-card.card-gruen,
+.display-card.card-grün {
+    --card-solid: #279653;
+    --card-edge: #155f34;
+
+    color: #ffffff !important;
+    background:
+        #279653 !important;
+    background-color:
+        #279653 !important;
+    background-image:
+        none !important;
+    border-color:
+        #155f34 !important;
+}
+
+.card-gelb,
+button.card-gelb,
+.display-card.card-gelb {
+    --card-solid: #f2b51d;
+    --card-edge: #976500;
+
+    color: #2b2100 !important;
+    background:
+        #f2b51d !important;
+    background-color:
+        #f2b51d !important;
+    background-image:
+        none !important;
+    border-color:
+        #976500 !important;
+}
+
+button.card:hover:not(:disabled),
+#game .card:hover:not(:disabled) {
+    color: inherit !important;
+    background:
+        var(--card-solid) !important;
+    background-color:
+        var(--card-solid) !important;
+    background-image:
+        none !important;
+    border-color:
+        var(--card-edge) !important;
+    filter: none !important;
+}
+
+button.card:disabled {
+    color: inherit !important;
+    background:
+        var(--card-solid) !important;
+    background-color:
+        var(--card-solid) !important;
+    background-image:
+        none !important;
+    border-color:
+        var(--card-edge) !important;
+    filter: none !important;
+    opacity: 0.5 !important;
+}
+
+/*
+ * Der Gewinnerrahmen ist neutral und färbt die Karte
+ * selbst nicht um.
+ */
+
+.played-card-wrap.is-trick-winner {
+    background: #ffffff !important;
+    outline:
+        4px solid
+        #26384d !important;
+    box-shadow:
+        0 0 0 5px
+        #ffffff,
+        0 10px 28px
+        rgba(38, 56, 77, 0.32) !important;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root,
+    html,
+    body {
+        color-scheme: only light !important;
+        color: #1c2734 !important;
+        background-color: #eef3f8 !important;
+    }
+
+    .panel,
+    .result-dialog,
+    input {
+        color: #1c2734 !important;
+        background-color: #ffffff !important;
+    }
+
+    .card-rot,
+    button.card-rot,
+    .display-card.card-rot {
+        color: #ffffff !important;
+        background:
+            #cf2e2e !important;
+        background-color:
+            #cf2e2e !important;
+    }
+
+    .card-blau,
+    button.card-blau,
+    .display-card.card-blau {
+        color: #ffffff !important;
+        background:
+            #2e6bd1 !important;
+        background-color:
+            #2e6bd1 !important;
+    }
+
+    .card-gruen,
+    .card-grün,
+    button.card-gruen,
+    button.card-grün,
+    .display-card.card-gruen,
+    .display-card.card-grün {
+        color: #ffffff !important;
+        background:
+            #279653 !important;
+        background-color:
+            #279653 !important;
+    }
+
+    .card-gelb,
+    button.card-gelb,
+    .display-card.card-gelb {
+        color: #2b2100 !important;
+        background:
+            #f2b51d !important;
+        background-color:
+            #f2b51d !important;
+    }
+}
+
+@media (max-width: 600px) {
+    .room-browser-heading {
+        display: grid;
+        grid-template-columns: 1fr;
+    }
+
+    .compact-button {
+        width: 100%;
+    }
+
+    .room-entry {
+        grid-template-columns: 1fr;
+    }
+
+    .room-entry-side {
+        grid-template-columns:
+            1fr
+            auto;
+        justify-items: start;
+        align-items: center;
+    }
+}

@@ -79,3 +79,25 @@ UPDATE V52
 - Rot ist als Trumpf jetzt über eine eindeutige Rangberechnung abgesichert:
   Jede rote Karte schlägt jede gelbe, blaue oder grüne Karte.
 - Cache-Version: ?v=52
+
+
+UPDATE V53
+
+- Spieler müssen keinen Raumcode mehr eingeben.
+- Der Spielleiter vergibt beim Erstellen einen sichtbaren Raumnamen.
+- Offene Räume werden auf der Startseite automatisch aufgelistet.
+- Ein Spieler tritt durch Anklicken eines Raums bei.
+- Beim Spielstart verschwindet der Raum aus der Liste offener Räume.
+- Der interne Firebase-Raumcode wird den Spielern nicht mehr angezeigt.
+- Der alte lilafarbene Balken im Feld "Aktueller Stich" wurde entfernt.
+- Während der Stichauswertung verschwindet auch der Farbrahmen
+  der ausgespielten Farbe. Die Gewinnerkarte bleibt separat markiert.
+- Der helle Modus wird durch Meta-Angaben, CSS und JavaScript erzwungen.
+- Karten verwenden feste, einfarbige Werte, damit Rot nicht durch
+  automatische mobile Dunkelmodus-Anpassungen zu Gelb verändert wird.
+- Cache-Version: ?v=53
+
+WICHTIG:
+Die neuen Regeln aus firebase_regeln.txt müssen erneut in Firebase unter
+Realtime Database > Regeln eingefügt und veröffentlicht werden.
+Neue Räume werden erst danach in der Raumliste sichtbar.

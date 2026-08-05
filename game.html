@@ -9,7 +9,7 @@
 
     <meta
         name="color-scheme"
-        content="light only">
+        content="light">
 
     <meta
         name="supported-color-schemes"
@@ -19,11 +19,24 @@
         name="theme-color"
         content="#eef3f8">
 
+    <style>
+        :root,
+        html {
+            color-scheme: only light !important;
+            background-color: #eef3f8 !important;
+        }
+    </style>
+
+    <script>
+        document.documentElement.style.colorScheme =
+            "only light";
+    </script>
+
     <title>Kartenspiel – Spiel</title>
 
     <link
         rel="stylesheet"
-        href="./style.css?v=52">
+        href="./style.css?v=53">
 </head>
 
 <body class="game-page">
@@ -147,7 +160,7 @@
     </div>
 
     <script type="module">
-        import("./game.js?v=52")
+        import("./game.js?v=53")
             .catch(error => {
                 console.error(error);
 

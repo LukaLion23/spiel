@@ -27,7 +27,7 @@ import {
     objectToCards,
     redirectToStatus,
     saveRoomSession
-} from "./firebase-common.js?v=52";
+} from "./firebase-common.js?v=53";
 
 
 let currentUser = null;
@@ -356,6 +356,13 @@ function renderTrick() {
         "trick-color-gelb"
     );
 
+    const trick =
+        Array.isArray(
+            gameState?.currentTrick
+        )
+            ? gameState.currentTrick
+            : [];
+
     const activeColorClass =
         colorClassMap[
             normalizeColor(
@@ -363,18 +370,20 @@ function renderTrick() {
             )
         ];
 
-    if (activeColorClass) {
+    /*
+     * Während des laufenden Stichs zeigt der Rahmen
+     * die ausgespielte Farbe. Bei der Auswertung
+     * verschwindet dieser Farbrahmen wieder.
+     */
+    if (
+        activeColorClass &&
+        gameState?.status === "playing" &&
+        trick.length > 0
+    ) {
         trickPanel.classList.add(
             activeColorClass
         );
     }
-
-    const trick =
-        Array.isArray(
-            gameState?.currentTrick
-        )
-            ? gameState.currentTrick
-            : [];
 
     if (trick.length === 0) {
         trickArea.innerHTML =

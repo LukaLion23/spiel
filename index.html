@@ -9,7 +9,7 @@
 
     <meta
         name="color-scheme"
-        content="light only">
+        content="light">
 
     <meta
         name="supported-color-schemes"
@@ -19,11 +19,24 @@
         name="theme-color"
         content="#eef3f8">
 
-    <title>Kartenspiel – Eintritt</title>
+    <style>
+        :root,
+        html {
+            color-scheme: only light !important;
+            background-color: #eef3f8 !important;
+        }
+    </style>
+
+    <script>
+        document.documentElement.style.colorScheme =
+            "only light";
+    </script>
+
+    <title>Kartenspiel – Spielräume</title>
 
     <link
         rel="stylesheet"
-        href="./style.css?v=52">
+        href="./style.css?v=53">
 </head>
 
 <body class="entry-page">
@@ -36,7 +49,7 @@
             class="panel"
             id="entryPanel">
 
-            <h2>Spiel erstellen oder beitreten</h2>
+            <h2>Spielername</h2>
 
             <label for="playerName">
                 Dein Name
@@ -47,37 +60,67 @@
                 type="text"
                 maxlength="30"
                 placeholder="Spielername"
-                autocomplete="off">
+                autocomplete="name">
 
-            <button
-                id="createRoomButton"
-                type="button"
-                disabled>
-                Neues Spiel erstellen
-            </button>
+            <section class="create-room-area">
 
-            <div class="section-divider">
-                oder
-            </div>
+                <h2>Neues Spiel erstellen</h2>
 
-            <label for="roomCodeInput">
-                Spielcode
-            </label>
+                <label for="roomName">
+                    Name des Spielraums
+                </label>
 
-            <input
-                id="roomCodeInput"
-                type="text"
-                minlength="6"
-                maxlength="6"
-                placeholder="ABC123"
-                autocomplete="off">
+                <input
+                    id="roomName"
+                    type="text"
+                    maxlength="40"
+                    placeholder="Zum Beispiel: Freitagsspiel"
+                    autocomplete="off">
 
-            <button
-                id="joinRoomButton"
-                type="button"
-                disabled>
-                Spiel beitreten
-            </button>
+                <button
+                    id="createRoomButton"
+                    type="button"
+                    disabled>
+                    Spielraum erstellen
+                </button>
+
+            </section>
+
+            <section class="room-browser">
+
+                <div class="room-browser-heading">
+                    <div>
+                        <h2>Offene Spielräume</h2>
+
+                        <p>
+                            Wähle einen Raum aus,
+                            um direkt beizutreten.
+                        </p>
+                    </div>
+
+                    <button
+                        id="refreshRoomsButton"
+                        class="secondary-button compact-button"
+                        type="button"
+                        disabled>
+                        Aktualisieren
+                    </button>
+                </div>
+
+                <div
+                    class="available-room-list"
+                    id="availableRoomList">
+                </div>
+
+                <p
+                    class="empty-room-message"
+                    id="roomListStatus">
+
+                    Räume werden geladen …
+
+                </p>
+
+            </section>
 
             <p id="firebaseStatus">
                 Verbindung wird hergestellt …
@@ -92,7 +135,10 @@
 
             <h2>Warteraum</h2>
 
-            <p id="activeRoomCode"></p>
+            <p
+                class="active-room-name"
+                id="activeRoomName">
+            </p>
 
             <h3>Spieler</h3>
 
@@ -124,7 +170,7 @@
     </main>
 
     <script type="module">
-        import("./lobby.js?v=52")
+        import("./lobby.js?v=53")
             .catch(error => {
                 console.error(error);
 

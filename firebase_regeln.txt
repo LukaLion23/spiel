@@ -1,5 +1,15 @@
 {
   "rules": {
+    "publicRooms": {
+      ".read": "auth != null",
+
+      "$roomCode": {
+        ".write": "auth != null && ((!data.exists() && newData.child('hostId').val() === auth.uid) || data.child('hostId').val() === auth.uid)",
+
+        ".validate": "!newData.exists() || (newData.hasChildren(['hostId', 'hostName', 'roomName', 'createdAt']) && newData.child('hostId').isString() && newData.child('hostName').isString() && newData.child('hostName').val().length > 0 && newData.child('hostName').val().length <= 30 && newData.child('roomName').isString() && newData.child('roomName').val().length > 0 && newData.child('roomName').val().length <= 40 && newData.child('createdAt').isNumber() && (!newData.child('playerCount').exists() || newData.child('playerCount').isNumber()))"
+      }
+    },
+
     "games": {
       "$roomCode": {
         ".write": "auth != null && ((!data.exists() && newData.child('meta').child('hostId').val() === auth.uid) || data.child('meta').child('hostId').val() === auth.uid)",
