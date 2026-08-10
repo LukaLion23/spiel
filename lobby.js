@@ -27,7 +27,7 @@ import {
     redirectToStatus,
     renderPlayerNameHtml,
     saveRoomSession
-} from "./firebase-common.js?v=66";
+} from "./firebase-common.js?v=67";
 
 
 const HEARTBEAT_INTERVAL_MS = 20000;

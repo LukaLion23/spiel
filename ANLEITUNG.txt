@@ -299,3 +299,16 @@ UPDATE V66
 - Ein sehr dezenter heller Glanz bleibt erhalten.
 - Auf der Startseite muss unten "Version 66" stehen.
 - Cache-Version: ?v=66
+
+
+UPDATE V67
+
+- Eine bisher übersehene Namensanzeige wurde korrigiert:
+  Beim Text "... gewinnt den Stich" wird LukasLion jetzt ebenfalls
+  mit der bunten Spezialdarstellung angezeigt.
+- Das Farbmuster wurde vereinfacht und stabilisiert.
+- Der komplette Name enthält jetzt unabhängig von Schriftgröße und
+  Position immer mehrere kräftige Farben.
+- Es gibt keinen goldenen Spezialstil und keinen schwarzen Rand mehr.
+- Auf der Startseite muss unten "Version 67" stehen.
+- Cache-Version: ?v=67

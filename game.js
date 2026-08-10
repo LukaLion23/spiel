@@ -29,7 +29,7 @@ import {
     objectToCards,
     redirectToStatus,
     saveRoomSession
-} from "./firebase-common.js?v=66";
+} from "./firebase-common.js?v=67";
 
 
 let currentUser = null;
@@ -451,8 +451,10 @@ function renderTrick() {
                 gameState.lastWinnerId
             ]?.name ?? "Unbekannt";
 
-        trickWinner.textContent =
-            `${winnerName} gewinnt den Stich.`;
+        trickWinner.innerHTML = `
+            ${renderPlayerNameHtml(winnerName)}
+            gewinnt den Stich.
+        `;
     } else {
         trickWinner.textContent = "";
     }
