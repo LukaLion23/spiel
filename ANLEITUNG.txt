@@ -279,3 +279,14 @@ UPDATE V64
 - Für Browser ohne text-stroke gibt es einen Schatten-Fallback.
 - Auf der Startseite muss unten "Version 64" stehen.
 - Cache-Version: ?v=64
+
+
+UPDATE V65
+
+- "LukasLion" ist jetzt vollständig mehrfarbig statt golden.
+- Die Buchstaben enthalten kräftige rote, gelbe, grüne, blaue und
+  pinke Farbbereiche.
+- Der Effekt ist bewusst unregelmäßig, ähnlich einer bunten Muster-Schrift.
+- Der schwarze Rand bleibt erhalten, damit der Name überall lesbar bleibt.
+- Auf der Startseite muss unten "Version 65" stehen.
+- Cache-Version: ?v=65

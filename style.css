@@ -2547,96 +2547,132 @@ button.card:disabled
 
 
 /* =========================================================
-   Update v64 – Glänzender LukasLion-Name mit schwarzem Rand
+   Update v65 – Mehrfarbiger LukasLion-Name
    ========================================================= */
 
 .master-player-name {
     display: inline-block;
 
     font-weight: 900;
-    letter-spacing: 0.01em;
+    letter-spacing: 0.015em;
 
-    color: #c99612;
+    /*
+     * Mehrere kräftige Farbflecken direkt innerhalb der Buchstaben.
+     * Das ergibt einen bunten, unregelmäßigen Effekt ähnlich
+     * der gewünschten Vorlage.
+     */
+    color: #ff2a2a;
+
     background:
+        radial-gradient(
+            circle at 8% 30%,
+            #00d83a 0 10%,
+            transparent 11%
+        ),
+        radial-gradient(
+            circle at 20% 72%,
+            #00b9f2 0 11%,
+            transparent 12%
+        ),
+        radial-gradient(
+            circle at 34% 24%,
+            #ff004d 0 10%,
+            transparent 11%
+        ),
+        radial-gradient(
+            circle at 46% 70%,
+            #ffe100 0 12%,
+            transparent 13%
+        ),
+        radial-gradient(
+            circle at 60% 30%,
+            #ff00c8 0 11%,
+            transparent 12%
+        ),
+        radial-gradient(
+            circle at 73% 72%,
+            #00dc6a 0 12%,
+            transparent 13%
+        ),
+        radial-gradient(
+            circle at 88% 28%,
+            #00b8ff 0 12%,
+            transparent 13%
+        ),
         linear-gradient(
-            180deg,
-            #fff7bf 0%,
-            #ffe98a 16%,
-            #d8a316 36%,
-            #fff2a7 52%,
-            #b77b09 72%,
-            #f0c94b 100%
+            100deg,
+            #ff2222 0%,
+            #ffea00 18%,
+            #00d93a 35%,
+            #00c8ff 52%,
+            #ff00ce 70%,
+            #ff2424 86%,
+            #ffd900 100%
         );
+
+    background-size:
+        70px 70px,
+        84px 84px,
+        76px 76px,
+        88px 88px,
+        78px 78px,
+        92px 92px,
+        82px 82px,
+        100% 100%;
+
+    background-position:
+        0 0,
+        20px 4px,
+        42px -8px,
+        65px 12px,
+        88px -4px,
+        112px 8px,
+        138px -6px,
+        0 0;
 
     -webkit-background-clip: text;
     background-clip: text;
     -webkit-text-fill-color: transparent;
 
     /*
-     * Schwarzer Rand für gute Lesbarkeit auf jedem Hintergrund.
+     * Schwarzer Rand bleibt bestehen, damit der Name auf
+     * hellen und dunklen Flächen immer lesbar ist.
      */
-    -webkit-text-stroke: 1px rgba(0, 0, 0, 0.9);
+    -webkit-text-stroke:
+        1px rgba(0, 0, 0, 0.92);
 
     text-shadow:
-        0 1px 0 rgba(255, 245, 176, 0.35),
-        0 0 2px rgba(0, 0, 0, 0.55),
-        0 0 6px rgba(230, 184, 43, 0.22);
+        0 1px 1px rgba(0, 0, 0, 0.30),
+        0 0 2px rgba(0, 0, 0, 0.45);
 
     filter: none !important;
 }
 
 /*
- * Fallback für Browser ohne background-clip:text.
+ * Fallback für Browser ohne background-clip:text:
+ * kräftig buntes Pink mit schwarzem Rand statt unsichtbarem Text.
  */
 @supports not (
     (-webkit-background-clip: text) or
     (background-clip: text)
 ) {
     .master-player-name {
-        color: #d4a11d !important;
+        color: #ff2b9d !important;
         background: none !important;
-        -webkit-text-fill-color: initial !important;
+        -webkit-text-fill-color: #ff2b9d !important;
     }
 }
 
 /*
- * Falls text-stroke nicht unterstützt wird, mit mehreren Schatten
- * einen dunklen Rand simulieren.
+ * Falls text-stroke nicht unterstützt wird,
+ * simulieren vier dunkle Schatten den Rand.
  */
 @supports not (-webkit-text-stroke: 1px black) {
     .master-player-name {
         text-shadow:
-            -1px -1px 0 rgba(0, 0, 0, 0.9),
-             1px -1px 0 rgba(0, 0, 0, 0.9),
-            -1px  1px 0 rgba(0, 0, 0, 0.9),
-             1px  1px 0 rgba(0, 0, 0, 0.9),
-             0 1px 0 rgba(255, 245, 176, 0.35),
-             0 0 6px rgba(230, 184, 43, 0.22);
-    }
-}
-
-@media (prefers-color-scheme: dark) {
-    .master-player-name {
-        background:
-            linear-gradient(
-                180deg,
-                #fff6c7 0%,
-                #ffeb98 18%,
-                #e2b63d 38%,
-                #fff1ad 55%,
-                #c98d10 76%,
-                #f0ce61 100%
-            );
-
-        -webkit-background-clip: text;
-        background-clip: text;
-        -webkit-text-fill-color: transparent;
-
-        -webkit-text-stroke: 1px rgba(0, 0, 0, 0.95);
-
-        text-shadow:
-            0 1px 0 rgba(0, 0, 0, 0.45),
-            0 0 3px rgba(0, 0, 0, 0.65),
-            0 0 8px rgba(255, 215, 90, 0.18);
+            -1px -1px 0 #111111,
+             1px -1px 0 #111111,
+            -1px  1px 0 #111111,
+             1px  1px 0 #111111;
     }
 }
