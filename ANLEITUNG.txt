@@ -204,3 +204,28 @@ UPDATE V59
   weiterhin vorkommen. Sie sind allein kein Beweis für schlechtes Mischen.
 - Auf Handy und Laptop muss unten "Version 59" stehen.
 - Cache-Version: ?v=59
+
+
+UPDATE V60 – STABILER WIEDEREINSTIEG
+
+- Die Firebase-Anmeldung wird ausdrücklich dauerhaft im Browser gespeichert.
+- Raumcode und Spielername werden zusätzlich in localStorage gesichert.
+- Nach Neuladen oder wenn ein mobiler Browser den Hintergrund-Tab verwirft,
+  wird automatisch versucht, in den bisherigen Raum zurückzukehren.
+- Beim Zurückwechseln auf den Tab wird der aktuelle Raumstatus neu gelesen.
+- Ein Firebase-Verbindungsabbruch löscht den öffentlichen Raum NICHT mehr.
+- Ein öffentlicher Lobbyraum darf bis zu 15 Minuten ohne Heartbeat bestehen.
+- Wird er danach als veraltet betrachtet, verschwindet nur seine Anzeige
+  aus publicRooms. Das eigentliche Spiel unter games/... bleibt erhalten.
+- Komplette Spiele werden nicht mehr automatisch wegen vermeintlicher
+  Inaktivität gelöscht.
+- Ein komplettes Spiel wird nur noch bewusst durch den Spielleiter beendet
+  bzw. gelöscht.
+- Auf Handy und Laptop muss unten "Version 60" stehen.
+- Cache-Version: ?v=60
+
+WICHTIG:
+firebase_regeln.txt wurde geändert.
+Die Datei vollständig unter
+Firebase > Realtime Database > Regeln
+einsetzen und veröffentlichen.

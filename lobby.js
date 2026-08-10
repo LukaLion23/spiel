@@ -5,7 +5,6 @@ import {
 
 import {
     get,
-    onDisconnect,
     onValue,
     ref,
     remove,
@@ -22,15 +21,22 @@ import {
     cleanRoomCode,
     clearRoomSession,
     escapeHtml,
+    getSavedPlayerName,
+    getSavedRoomCode,
     orderedPlayers,
     redirectToStatus,
     saveRoomSession
-} from "./firebase-common.js?v=59";
+} from "./firebase-common.js?v=60";
 
 
-const HEARTBEAT_INTERVAL_MS = 15000;
-const STALE_ROOM_DELETE_AFTER_MS = 120000;
-const EMPTY_ROOM_DELETE_DELAY_MS = 60000;
+const HEARTBEAT_INTERVAL_MS = 20000;
+
+/*
+ * Mobile Browser dürfen den Tab längere Zeit pausieren,
+ * ohne dass der Raum als verloren gilt.
+ */
+const STALE_PUBLIC_ROOM_AFTER_MS =
+    15 * 60 * 1000;
 
 
 let currentUser = null;
@@ -46,13 +52,10 @@ let stopConnectionListener = null;
 let stopServerTimeOffsetListener = null;
 
 let heartbeatTimer = null;
-let presenceRoomCode = null;
-let publicRoomDisconnect = null;
 
 let lastPublishedPlayerCount = null;
 let heartbeatRunning = false;
 let playersSnapshotLoaded = false;
-let emptyRoomDeleteTimer = null;
 let serverTimeOffsetMs = null;
 
 const cleanupInProgress =
@@ -393,7 +396,7 @@ function renderAvailableRooms() {
 
                     return (
                         serverNow - timestamp <=
-                            STALE_ROOM_DELETE_AFTER_MS
+                            STALE_PUBLIC_ROOM_AFTER_MS
                     );
                 }
             )
@@ -488,7 +491,7 @@ async function cleanupStaleRooms() {
                 return (
                     timestamp === 0 ||
                     serverNow - timestamp >
-                        STALE_ROOM_DELETE_AFTER_MS
+                        STALE_PUBLIC_ROOM_AFTER_MS
                 );
             })
             .map(([roomCode]) =>
@@ -506,15 +509,17 @@ async function cleanupStaleRooms() {
         cleanupInProgress.add(roomCode);
 
         try {
-            await update(
-                ref(database),
-                {
-                    [`publicRooms/${roomCode}`]:
-                        null,
-
-                    [`games/${roomCode}`]:
-                        null
-                }
+            /*
+             * Nur den öffentlichen Lobbyeintrag entfernen.
+             * Das eigentliche Spiel bleibt erhalten, damit
+             * Spieler nach einer Browser-Suspendierung
+             * wieder einsteigen können.
+             */
+            await remove(
+                ref(
+                    database,
+                    `publicRooms/${roomCode}`
+                )
             );
 
         } catch (error) {
@@ -852,7 +857,6 @@ async function enterRoom(
     activeRoomCode = roomCode;
     lastPublishedPlayerCount = null;
     playersSnapshotLoaded = false;
-    cancelEmptyRoomDeletion();
 
     saveRoomSession(
         roomCode,
@@ -951,46 +955,11 @@ async function startHostPresence() {
         return;
     }
 
-    if (
-        presenceRoomCode ===
-            activeRoomCode &&
-        heartbeatTimer &&
-        stopConnectionListener
-    ) {
-        return;
-    }
-
-    if (
-        presenceRoomCode !==
-        activeRoomCode
-    ) {
-        await stopHostPresence();
-
-        presenceRoomCode =
-            activeRoomCode;
-    }
-
-    const publicRoomReference =
-        ref(
-            database,
-            `publicRooms/${activeRoomCode}`
-        );
-
-    publicRoomDisconnect =
-        onDisconnect(
-            publicRoomReference
-        );
-
-    try {
-        await publicRoomDisconnect.remove();
-
-    } catch (error) {
-        console.error(
-            "Automatisches Entfernen des Raums konnte nicht vorbereitet werden:",
-            error
-        );
-    }
-
+    /*
+     * Es gibt bewusst KEIN automatisches Entfernen bei
+     * einem Firebase-Disconnect. Ein Tabwechsel oder das
+     * Sperren des Handys darf den Raum nicht verschwinden lassen.
+     */
     if (!stopConnectionListener) {
         stopConnectionListener =
             onValue(
@@ -1005,7 +974,11 @@ async function startHostPresence() {
                         roomMeta?.status ===
                             "lobby"
                     ) {
-                        void registerDisconnectAndPublish();
+                        void publishPublicRoom(
+                            orderedPlayers(
+                                roomPlayers
+                            ).length
+                        );
                     }
                 }
             );
@@ -1024,36 +997,6 @@ async function startHostPresence() {
                 HEARTBEAT_INTERVAL_MS
             );
     }
-
-    await publishPublicRoom(
-        orderedPlayers(
-            roomPlayers
-        ).length
-    );
-}
-
-
-async function registerDisconnectAndPublish() {
-    if (
-        !isHost() ||
-        !activeRoomCode ||
-        roomMeta?.status !== "lobby"
-    ) {
-        return;
-    }
-
-    const publicRoomReference =
-        ref(
-            database,
-            `publicRooms/${activeRoomCode}`
-        );
-
-    publicRoomDisconnect =
-        onDisconnect(
-            publicRoomReference
-        );
-
-    await publicRoomDisconnect.remove();
 
     await publishPublicRoom(
         orderedPlayers(
@@ -1171,20 +1114,6 @@ async function stopHostPresence() {
         stopConnectionListener = null;
     }
 
-    if (publicRoomDisconnect) {
-        try {
-            await publicRoomDisconnect.cancel();
-        } catch (error) {
-            console.debug(
-                "OnDisconnect-Auftrag konnte nicht abgebrochen werden:",
-                error.message
-            );
-        }
-
-        publicRoomDisconnect = null;
-    }
-
-    presenceRoomCode = null;
     heartbeatRunning = false;
 }
 
@@ -1241,117 +1170,6 @@ function renderLobby() {
             players.length
         );
     }
-
-    if (
-        host &&
-        playersSnapshotLoaded &&
-        players.length === 0
-    ) {
-        scheduleEmptyRoomDeletion();
-    } else {
-        cancelEmptyRoomDeletion();
-    }
-}
-
-
-function scheduleEmptyRoomDeletion() {
-    if (
-        emptyRoomDeleteTimer ||
-        !isHost() ||
-        !activeRoomCode ||
-        !playersSnapshotLoaded
-    ) {
-        return;
-    }
-
-    const roomCode =
-        activeRoomCode;
-
-    emptyRoomDeleteTimer =
-        window.setTimeout(
-            () => {
-                emptyRoomDeleteTimer = null;
-
-                void deleteEmptyHostRoom(
-                    roomCode
-                );
-            },
-            EMPTY_ROOM_DELETE_DELAY_MS
-        );
-}
-
-
-function cancelEmptyRoomDeletion() {
-    if (!emptyRoomDeleteTimer) {
-        return;
-    }
-
-    window.clearTimeout(
-        emptyRoomDeleteTimer
-    );
-
-    emptyRoomDeleteTimer = null;
-}
-
-
-async function deleteEmptyHostRoom(
-    expectedRoomCode
-) {
-    if (
-        !isHost() ||
-        !activeRoomCode ||
-        activeRoomCode !==
-            expectedRoomCode
-    ) {
-        return;
-    }
-
-    /*
-     * Nach der Wartezeit die Spielerliste direkt vom
-     * Server neu laden. Nur wenn sie dann immer noch
-     * wirklich leer ist, wird der Raum gelöscht.
-     */
-    const playersSnapshot =
-        await get(
-            ref(
-                database,
-                `games/${expectedRoomCode}/lobbyPlayers`
-            )
-        );
-
-    if (
-        playersSnapshot.exists() &&
-        Object.keys(
-            playersSnapshot.val() ?? {}
-        ).length > 0
-    ) {
-        return;
-    }
-
-    await stopHostPresence();
-
-    try {
-        await update(
-            ref(database),
-            {
-                [`games/${expectedRoomCode}`]:
-                    null,
-
-                [`publicRooms/${expectedRoomCode}`]:
-                    null
-            }
-        );
-
-    } catch (error) {
-        console.error(
-            "Leerer Raum konnte nicht gelöscht werden:",
-            error
-        );
-
-        return;
-    }
-
-    await resetPage();
 }
 
 
@@ -1372,7 +1190,6 @@ async function prepareGame() {
     }
 
     prepareGameButton.disabled = true;
-    cancelEmptyRoomDeletion();
 
     try {
         await stopHostPresence();
@@ -1425,7 +1242,6 @@ async function leaveRoom() {
     }
 
     if (host) {
-        cancelEmptyRoomDeletion();
         await stopHostPresence();
 
         await update(
@@ -1466,8 +1282,6 @@ function stopRoomListeners() {
 
 
 async function resetPage() {
-    cancelEmptyRoomDeletion();
-
     await stopHostPresence();
     stopRoomListeners();
 
@@ -1492,16 +1306,10 @@ async function resetPage() {
 
 async function restoreSavedRoom() {
     const savedRoomCode =
-        cleanRoomCode(
-            sessionStorage.getItem(
-                "kartenspielRoomCode"
-            )
-        );
+        getSavedRoomCode();
 
     const savedPlayerName =
-        sessionStorage.getItem(
-            "kartenspielPlayerName"
-        );
+        getSavedPlayerName();
 
     if (
         savedRoomCode.length !== 6 ||
@@ -1607,6 +1415,90 @@ roomNameInput.addEventListener(
         if (event.key === "Enter") {
             createRoom();
         }
+    }
+);
+
+
+async function recoverAfterForeground() {
+    if (
+        document.visibilityState !== "visible" ||
+        !currentUser
+    ) {
+        return;
+    }
+
+    try {
+        if (activeRoomCode) {
+            const metaSnapshot =
+                await get(
+                    ref(
+                        database,
+                        `games/${activeRoomCode}/meta`
+                    )
+                );
+
+            if (!metaSnapshot.exists()) {
+                await resetPage();
+                return;
+            }
+
+            const meta =
+                metaSnapshot.val();
+
+            if (meta.status !== "lobby") {
+                redirectToStatus(
+                    meta.status,
+                    activeRoomCode,
+                    "./index.html"
+                );
+
+                return;
+            }
+
+            roomMeta = meta;
+
+            if (isHost()) {
+                await startHostPresence();
+            }
+
+            return;
+        }
+
+        const savedRoomCode =
+            getSavedRoomCode();
+
+        if (savedRoomCode.length === 6) {
+            await restoreSavedRoom();
+        } else {
+            await refreshAvailableRooms();
+        }
+
+    } catch (error) {
+        console.error(
+            "Wiederaufnahme nach Tabwechsel fehlgeschlagen:",
+            error
+        );
+    }
+}
+
+
+document.addEventListener(
+    "visibilitychange",
+    () => {
+        if (
+            document.visibilityState ===
+            "visible"
+        ) {
+            void recoverAfterForeground();
+        }
+    }
+);
+
+
+window.addEventListener(
+    "pageshow",
+    () => {
+        void recoverAfterForeground();
     }
 );
 

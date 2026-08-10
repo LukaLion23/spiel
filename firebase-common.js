@@ -7,7 +7,9 @@ import {
 } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-app.js";
 
 import {
-    getAuth
+    browserLocalPersistence,
+    getAuth,
+    setPersistence
 } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-auth.js";
 
 import {
@@ -30,6 +32,24 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 
 export const auth = getAuth(app);
+
+/*
+ * Die anonyme Firebase-Anmeldung dauerhaft im Browser speichern.
+ * Dadurch bleibt die UID auch bei Neuladen oder einer
+ * kurzzeitigen Suspendierung des Tabs erhalten.
+ */
+try {
+    await setPersistence(
+        auth,
+        browserLocalPersistence
+    );
+} catch (error) {
+    console.error(
+        "Dauerhafte Firebase-Anmeldung konnte nicht aktiviert werden:",
+        error
+    );
+}
+
 export const database = getDatabase(app);
 
 export const COLORS = [
@@ -88,14 +108,14 @@ export function getCardImagePath(color) {
         normalizeColor(color);
 
     const imageByColor = {
-        Rot: "./assets/cards/rot.png?v=57",
-        Blau: "./assets/cards/blau.png?v=57",
-        "Grün": "./assets/cards/gruen.png?v=57",
-        Gelb: "./assets/cards/gelb.png?v=57"
+        Rot: "./assets/cards/rot.png?v=60",
+        Blau: "./assets/cards/blau.png?v=60",
+        "Grün": "./assets/cards/gruen.png?v=60",
+        Gelb: "./assets/cards/gelb.png?v=60"
     };
 
     return imageByColor[normalizedColor] ??
-        "./assets/cards/blau.png?v=57";
+        "./assets/cards/blau.png?v=60";
 }
 
 
@@ -124,11 +144,35 @@ export function cleanRoomCode(value) {
 
 
 export function getSavedRoomCode() {
+    const sessionRoomCode =
+        cleanRoomCode(
+            sessionStorage.getItem(
+                "kartenspielRoomCode"
+            )
+        );
+
+    if (sessionRoomCode.length === 6) {
+        return sessionRoomCode;
+    }
+
     return cleanRoomCode(
-        sessionStorage.getItem(
+        localStorage.getItem(
             "kartenspielRoomCode"
         )
     );
+}
+
+
+export function getSavedPlayerName() {
+    return (
+        sessionStorage.getItem(
+            "kartenspielPlayerName"
+        ) ??
+        localStorage.getItem(
+            "kartenspielPlayerName"
+        ) ??
+        ""
+    ).trim();
 }
 
 
@@ -145,6 +189,20 @@ export function saveRoomSession(
         "kartenspielPlayerName",
         playerName
     );
+
+    /*
+     * Zusätzlicher Wiederaufnahme-Punkt für mobile Browser,
+     * die einen Hintergrund-Tab vollständig entladen.
+     */
+    localStorage.setItem(
+        "kartenspielRoomCode",
+        roomCode
+    );
+
+    localStorage.setItem(
+        "kartenspielPlayerName",
+        playerName
+    );
 }
 
 
@@ -154,6 +212,14 @@ export function clearRoomSession() {
     );
 
     sessionStorage.removeItem(
+        "kartenspielPlayerName"
+    );
+
+    localStorage.removeItem(
+        "kartenspielRoomCode"
+    );
+
+    localStorage.removeItem(
         "kartenspielPlayerName"
     );
 }

@@ -12,7 +12,7 @@
 
     "games": {
       "$roomCode": {
-        ".write": "auth != null && ((!data.exists() && newData.child('meta').child('hostId').val() === auth.uid) || data.child('meta').child('hostId').val() === auth.uid || (!newData.exists() && data.child('meta').child('status').val() === 'lobby' && ((data.child('meta').child('lastSeenAt').isNumber() && data.child('meta').child('lastSeenAt').val() < now - 90000) || (!data.child('meta').child('lastSeenAt').exists() && data.child('meta').child('createdAt').isNumber() && data.child('meta').child('createdAt').val() < now - 90000))))",
+        ".write": "auth != null && ((!data.exists() && newData.child('meta').child('hostId').val() === auth.uid) || data.child('meta').child('hostId').val() === auth.uid)",
 
         "meta": {
           ".read": "auth != null"
