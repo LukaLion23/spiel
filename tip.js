@@ -20,10 +20,11 @@ import {
     getCardImagePath,
     getRoomCodeFromUrl,
     objectToCards,
+    renderPlayerNameHtml,
     redirectToStatus,
     rotateOrder,
     saveRoomSession
-} from "./firebase-common.js?v=61";
+} from "./firebase-common.js?v=62";
 
 
 let currentUser = null;
@@ -203,8 +204,12 @@ async function initializePage() {
         playerSnapshot.val().name
     );
 
-    playerDisplay.textContent =
-        `Du spielst als ${playerSnapshot.val().name}.`;
+    playerDisplay.innerHTML = `
+        Du spielst als
+        ${renderPlayerNameHtml(
+            playerSnapshot.val().name
+        )}.
+    `;
 
     attachListeners();
 }
@@ -359,7 +364,7 @@ function renderPage() {
     currentTipPlayerElement.innerHTML = `
         Jetzt tippt:
         <strong>
-            ${escapeHtml(currentTipPlayerName)}
+            ${renderPlayerNameHtml(currentTipPlayerName)}
         </strong>
     `;
 
@@ -462,7 +467,7 @@ function renderTipOverview(
                     </span>
 
                     <span class="tip-player-name">
-                        ${escapeHtml(player.name)}
+                        ${renderPlayerNameHtml(player.name)}
                         ${isStarter ? '<small>Rundenanfänger</small>' : ""}
                     </span>
 

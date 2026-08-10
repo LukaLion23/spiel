@@ -2544,3 +2544,52 @@ button.card:disabled
 .master-welcome[hidden] {
     display: none !important;
 }
+
+
+/* =========================================================
+   Update v62 – Goldener LukasLion-Name
+   ========================================================= */
+
+.master-player-name {
+    display: inline-block;
+
+    font-weight: 900;
+    letter-spacing: 0.01em;
+
+    color: #c99916;
+
+    background:
+        linear-gradient(
+            180deg,
+            #fff4a8 0%,
+            #fffbe0 12%,
+            #f6d86b 28%,
+            #d89a12 48%,
+            #fff0a0 62%,
+            #b67908 82%,
+            #f8d76a 100%
+        );
+
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+
+    text-shadow:
+        0 1px 0 rgba(255, 245, 176, 0.55),
+        0 0 6px rgba(255, 214, 90, 0.25),
+        0 0 14px rgba(202, 146, 0, 0.18);
+}
+
+/*
+ * Fallback für Browser ohne background-clip:text.
+ */
+@supports not (
+    (-webkit-background-clip: text) or
+    (background-clip: text)
+) {
+    .master-player-name {
+        color: #d2a11a;
+        background: none;
+        -webkit-text-fill-color: initial;
+    }
+}

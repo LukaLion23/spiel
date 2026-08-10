@@ -20,11 +20,12 @@ import {
     escapeHtml,
     getRoomCodeFromUrl,
     orderedPlayers,
+    renderPlayerNameHtml,
     redirectToStatus,
     rotateOrder,
     saveRoomSession,
     shuffle
-} from "./firebase-common.js?v=61";
+} from "./firebase-common.js?v=62";
 
 
 let currentUser = null;
@@ -409,7 +410,7 @@ function renderLastRound() {
 
         html += `
             <tr>
-                <td>${escapeHtml(score.name)}</td>
+                <td>${renderPlayerNameHtml(score.name)}</td>
                 <td>${score.roundPoints ?? 0}</td>
                 <td>${score.score ?? 0}</td>
             </tr>
@@ -449,13 +450,17 @@ function renderFinalResult() {
                     (player.score ?? 0) ===
                     highestScore
             )
-            .map(player => player.name)
+            .map(player =>
+                renderPlayerNameHtml(
+                    player.name
+                )
+            )
             .join(", ");
 
     let html = `
         <div class="winner-card">
             <span>Gewinner</span>
-            <strong>${escapeHtml(winners)}</strong>
+            <strong>${winners}</strong>
             <small>${highestScore} Punkte</small>
         </div>
 
@@ -471,7 +476,7 @@ function renderFinalResult() {
                     </span>
 
                     <span class="rank-name">
-                        ${escapeHtml(player.name)}
+                        ${renderPlayerNameHtml(player.name)}
                     </span>
 
                     <strong class="rank-points">

@@ -135,6 +135,30 @@ export function escapeHtml(value) {
 }
 
 
+export function isMasterPlayerName(name) {
+    return String(name ?? "").trim() ===
+        "LukasLion";
+}
+
+
+export function renderPlayerNameHtml(name) {
+    const safeName =
+        escapeHtml(
+            String(name ?? "").trim()
+        );
+
+    if (isMasterPlayerName(name)) {
+        return `
+            <span class="master-player-name">
+                ${safeName}
+            </span>
+        `;
+    }
+
+    return safeName;
+}
+
+
 export function cleanRoomCode(value) {
     return String(value ?? "")
         .trim()

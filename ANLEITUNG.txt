@@ -243,3 +243,18 @@ UPDATE V61
   "Willkommen Meister"
 - Auf der Startseite muss unten "Version 61" stehen.
 - Cache-Version: ?v=61
+
+
+UPDATE V62
+
+- Der Name "LukasLion" wird überall im Spiel goldfarben dargestellt.
+- Die Darstellung ist leicht glänzend und gilt für alle Teilnehmer,
+  sobald sie den Namen sehen.
+- Das betrifft unter anderem:
+  - Raumliste / Spielleitername
+  - Warteraum-Spielerliste
+  - Tippseite
+  - Spielseite
+  - Ergebnis- und Ranglisten
+- Auf der Startseite muss unten "Version 62" stehen.
+- Cache-Version: ?v=62

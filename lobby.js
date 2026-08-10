@@ -25,8 +25,9 @@ import {
     getSavedRoomCode,
     orderedPlayers,
     redirectToStatus,
+    renderPlayerNameHtml,
     saveRoomSession
-} from "./firebase-common.js?v=61";
+} from "./firebase-common.js?v=62";
 
 
 const HEARTBEAT_INTERVAL_MS = 20000;
@@ -445,7 +446,7 @@ function renderAvailableRooms() {
 
                 <small>
                     Spielleiter:
-                    ${escapeHtml(
+                    ${renderPlayerNameHtml(
                         room.hostName ??
                         "Unbekannt"
                     )}
@@ -1142,23 +1143,27 @@ function renderLobby() {
         const item =
             document.createElement("li");
 
-        let label = player.name;
+        let suffix = "";
 
         if (
             roomMeta &&
             player.id === roomMeta.hostId
         ) {
-            label += " (Spielleiter)";
+            suffix += " (Spielleiter)";
         }
 
         if (
             currentUser &&
             player.id === currentUser.uid
         ) {
-            label += " (Du)";
+            suffix += " (Du)";
         }
 
-        item.textContent = label;
+        item.innerHTML = `
+            ${renderPlayerNameHtml(player.name)}
+            ${escapeHtml(suffix)}
+        `;
+
         playerList.appendChild(item);
     }
 

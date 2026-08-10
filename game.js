@@ -24,11 +24,12 @@ import {
     getCardImagePath,
     getNextPlayerId,
     getRoomCodeFromUrl,
+    renderPlayerNameHtml,
     normalizeColor,
     objectToCards,
     redirectToStatus,
     saveRoomSession
-} from "./firebase-common.js?v=61";
+} from "./firebase-common.js?v=62";
 
 
 let currentUser = null;
@@ -278,10 +279,12 @@ function renderPage() {
     roundNumberElement.textContent =
         String(gameState.roundNumber ?? "–");
 
-    currentPlayerElement.textContent =
-        gameScores[
-            gameState.currentPlayerId
-        ]?.name ?? "–";
+    currentPlayerElement.innerHTML =
+        renderPlayerNameHtml(
+            gameScores[
+                gameState.currentPlayerId
+            ]?.name ?? "–"
+        );
 
     renderPlayerOverview();
     renderTrick();
@@ -320,7 +323,7 @@ function renderPlayerOverview() {
 
         html += `
             <article class="player-stat ${current ? "is-current" : ""}">
-                <h3>${escapeHtml(player.name)}</h3>
+                <h3>${renderPlayerNameHtml(player.name)}</h3>
 
                 <div>
                     <span>Tipp</span>
@@ -411,7 +414,7 @@ function renderTrick() {
                 return `
                     <div class="played-card-wrap ${isWinningCard ? "is-trick-winner" : ""}">
                         <span>
-                            ${escapeHtml(playerName)}
+                            ${renderPlayerNameHtml(playerName)}
                         </span>
 
                         <div
