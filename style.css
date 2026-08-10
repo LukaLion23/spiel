@@ -2547,7 +2547,7 @@ button.card:disabled
 
 
 /* =========================================================
-   Update v65 – Mehrfarbiger LukasLion-Name
+   Update v66 – Mehrfarbiger LukasLion-Name ohne schwarzen Rand
    ========================================================= */
 
 .master-player-name {
@@ -2558,8 +2558,7 @@ button.card:disabled
 
     /*
      * Mehrere kräftige Farbflecken direkt innerhalb der Buchstaben.
-     * Das ergibt einen bunten, unregelmäßigen Effekt ähnlich
-     * der gewünschten Vorlage.
+     * Der schwarze Rand wurde bewusst entfernt.
      */
     color: #ff2a2a;
 
@@ -2634,23 +2633,16 @@ button.card:disabled
     background-clip: text;
     -webkit-text-fill-color: transparent;
 
-    /*
-     * Schwarzer Rand bleibt bestehen, damit der Name auf
-     * hellen und dunklen Flächen immer lesbar ist.
-     */
-    -webkit-text-stroke:
-        1px rgba(0, 0, 0, 0.92);
-
     text-shadow:
-        0 1px 1px rgba(0, 0, 0, 0.30),
-        0 0 2px rgba(0, 0, 0, 0.45);
+        0 1px 0 rgba(255, 255, 255, 0.18),
+        0 0 2px rgba(255, 255, 255, 0.10);
 
     filter: none !important;
 }
 
 /*
  * Fallback für Browser ohne background-clip:text:
- * kräftig buntes Pink mit schwarzem Rand statt unsichtbarem Text.
+ * kräftig buntes Pink statt unsichtbarem Text.
  */
 @supports not (
     (-webkit-background-clip: text) or
@@ -2660,19 +2652,5 @@ button.card:disabled
         color: #ff2b9d !important;
         background: none !important;
         -webkit-text-fill-color: #ff2b9d !important;
-    }
-}
-
-/*
- * Falls text-stroke nicht unterstützt wird,
- * simulieren vier dunkle Schatten den Rand.
- */
-@supports not (-webkit-text-stroke: 1px black) {
-    .master-player-name {
-        text-shadow:
-            -1px -1px 0 #111111,
-             1px -1px 0 #111111,
-            -1px  1px 0 #111111,
-             1px  1px 0 #111111;
     }
 }

@@ -290,3 +290,12 @@ UPDATE V65
 - Der schwarze Rand bleibt erhalten, damit der Name überall lesbar bleibt.
 - Auf der Startseite muss unten "Version 65" stehen.
 - Cache-Version: ?v=65
+
+
+UPDATE V66
+
+- Beim Namen "LukasLion" wurde der schwarze Rand entfernt.
+- Der Name bleibt weiterhin komplett bunt.
+- Ein sehr dezenter heller Glanz bleibt erhalten.
+- Auf der Startseite muss unten "Version 66" stehen.
+- Cache-Version: ?v=66
