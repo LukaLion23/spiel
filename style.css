@@ -2498,3 +2498,49 @@ button.card:disabled
         margin-inline: auto !important;
     }
 }
+
+
+/* =========================================================
+   Update v61 – Aktionsabstände und Meister-Hinweis
+   ========================================================= */
+
+.round-actions,
+.lobby-actions {
+    display: grid;
+    gap: 14px;
+    margin-top: 18px;
+}
+
+.round-actions button,
+.lobby-actions button,
+#hostControls {
+    width: 100%;
+}
+
+#hostControls button {
+    width: 100%;
+}
+
+.master-welcome {
+    margin: 14px 0 18px;
+    padding: 10px 14px;
+
+    text-align: center;
+
+    color: #5a4200;
+    background: #fff5c7;
+
+    border: 1px solid #e8ce66;
+    border-radius: var(--radius-small);
+
+    font-size: 0.95rem;
+    font-weight: 850;
+
+    box-shadow:
+        0 4px 12px
+        rgba(121, 93, 14, 0.08);
+}
+
+.master-welcome[hidden] {
+    display: none !important;
+}

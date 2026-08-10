@@ -229,3 +229,17 @@ firebase_regeln.txt wurde geändert.
 Die Datei vollständig unter
 Firebase > Realtime Database > Regeln
 einsetzen und veröffentlichen.
+
+
+UPDATE V61
+
+- In der Rundenvorbereitung haben die Buttons
+  "Karten austeilen und Tipps starten" und "Spiel beenden"
+  jetzt einen deutlichen Abstand.
+- Im Warteraum haben "Alle sind da – weiter" und
+  "Raum verlassen" ebenfalls einen deutlichen Abstand.
+- Meldet sich ein Spieler exakt als "LukasLion" an,
+  erscheint im Warteraum ein kleiner Bereich mit:
+  "Willkommen Meister"
+- Auf der Startseite muss unten "Version 61" stehen.
+- Cache-Version: ?v=61

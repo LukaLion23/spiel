@@ -26,7 +26,7 @@ import {
     orderedPlayers,
     redirectToStatus,
     saveRoomSession
-} from "./firebase-common.js?v=60";
+} from "./firebase-common.js?v=61";
 
 
 const HEARTBEAT_INTERVAL_MS = 20000;
@@ -91,6 +91,9 @@ const firebaseStatus =
 
 const activeRoomNameElement =
     document.getElementById("activeRoomName");
+
+const masterWelcome =
+    document.getElementById("masterWelcome");
 
 const playerList =
     document.getElementById("playerList");
@@ -1124,6 +1127,17 @@ function renderLobby() {
     const players =
         orderedPlayers(roomPlayers);
 
+    const currentPlayer =
+        players.find(
+            player =>
+                currentUser &&
+                player.id === currentUser.uid
+        );
+
+    masterWelcome.hidden =
+        currentPlayer?.name !==
+            "LukasLion";
+
     for (const player of players) {
         const item =
             document.createElement("li");
@@ -1297,6 +1311,7 @@ async function resetPage() {
     lobbyPanel.hidden = true;
 
     activeRoomNameElement.textContent = "";
+    masterWelcome.hidden = true;
 
     setStatus(
         "Wähle einen offenen Spielraum oder erstelle einen neuen."

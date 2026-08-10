@@ -38,7 +38,7 @@
 
     <link
         rel="stylesheet"
-        href="./style.css?v=60">
+        href="./style.css?v=61">
 </head>
 
 <body class="entry-page">
@@ -129,7 +129,7 @@
             </p>
 
             <small class="app-version">
-                Version 60
+                Version 61
             </small>
 
         </section>
@@ -146,37 +146,50 @@
                 id="activeRoomName">
             </p>
 
+            <div
+                class="master-welcome"
+                id="masterWelcome"
+                hidden>
+
+                Willkommen Meister
+
+            </div>
+
             <h3>Spieler</h3>
 
             <ul id="playerList"></ul>
 
             <p id="lobbyStatus"></p>
 
-            <div
-                id="hostControls"
-                hidden>
+            <div class="lobby-actions">
+
+                <div
+                    id="hostControls"
+                    hidden>
+
+                    <button
+                        id="prepareGameButton"
+                        type="button">
+                        Alle sind da – weiter
+                    </button>
+
+                </div>
 
                 <button
-                    id="prepareGameButton"
+                    id="leaveRoomButton"
+                    class="secondary-button"
                     type="button">
-                    Alle sind da – weiter
+                    Raum verlassen
                 </button>
 
             </div>
-
-            <button
-                id="leaveRoomButton"
-                class="secondary-button"
-                type="button">
-                Raum verlassen
-            </button>
 
         </section>
 
     </main>
 
     <script type="module">
-        import("./lobby.js?v=60")
+        import("./lobby.js?v=61")
             .catch(error => {
                 console.error(error);
 
