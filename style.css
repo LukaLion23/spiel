@@ -2547,7 +2547,7 @@ button.card:disabled
 
 
 /* =========================================================
-   Update v62 – Goldener LukasLion-Name
+   Update v64 – Glänzender LukasLion-Name mit schwarzem Rand
    ========================================================= */
 
 .master-player-name {
@@ -2556,28 +2556,33 @@ button.card:disabled
     font-weight: 900;
     letter-spacing: 0.01em;
 
-    color: #c99916;
-
+    color: #c99612;
     background:
         linear-gradient(
             180deg,
-            #fff4a8 0%,
-            #fffbe0 12%,
-            #f6d86b 28%,
-            #d89a12 48%,
-            #fff0a0 62%,
-            #b67908 82%,
-            #f8d76a 100%
+            #fff7bf 0%,
+            #ffe98a 16%,
+            #d8a316 36%,
+            #fff2a7 52%,
+            #b77b09 72%,
+            #f0c94b 100%
         );
 
     -webkit-background-clip: text;
     background-clip: text;
     -webkit-text-fill-color: transparent;
 
+    /*
+     * Schwarzer Rand für gute Lesbarkeit auf jedem Hintergrund.
+     */
+    -webkit-text-stroke: 1px rgba(0, 0, 0, 0.9);
+
     text-shadow:
-        0 1px 0 rgba(255, 245, 176, 0.55),
-        0 0 6px rgba(255, 214, 90, 0.25),
-        0 0 14px rgba(202, 146, 0, 0.18);
+        0 1px 0 rgba(255, 245, 176, 0.35),
+        0 0 2px rgba(0, 0, 0, 0.55),
+        0 0 6px rgba(230, 184, 43, 0.22);
+
+    filter: none !important;
 }
 
 /*
@@ -2588,8 +2593,50 @@ button.card:disabled
     (background-clip: text)
 ) {
     .master-player-name {
-        color: #d2a11a;
-        background: none;
-        -webkit-text-fill-color: initial;
+        color: #d4a11d !important;
+        background: none !important;
+        -webkit-text-fill-color: initial !important;
+    }
+}
+
+/*
+ * Falls text-stroke nicht unterstützt wird, mit mehreren Schatten
+ * einen dunklen Rand simulieren.
+ */
+@supports not (-webkit-text-stroke: 1px black) {
+    .master-player-name {
+        text-shadow:
+            -1px -1px 0 rgba(0, 0, 0, 0.9),
+             1px -1px 0 rgba(0, 0, 0, 0.9),
+            -1px  1px 0 rgba(0, 0, 0, 0.9),
+             1px  1px 0 rgba(0, 0, 0, 0.9),
+             0 1px 0 rgba(255, 245, 176, 0.35),
+             0 0 6px rgba(230, 184, 43, 0.22);
+    }
+}
+
+@media (prefers-color-scheme: dark) {
+    .master-player-name {
+        background:
+            linear-gradient(
+                180deg,
+                #fff6c7 0%,
+                #ffeb98 18%,
+                #e2b63d 38%,
+                #fff1ad 55%,
+                #c98d10 76%,
+                #f0ce61 100%
+            );
+
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
+
+        -webkit-text-stroke: 1px rgba(0, 0, 0, 0.95);
+
+        text-shadow:
+            0 1px 0 rgba(0, 0, 0, 0.45),
+            0 0 3px rgba(0, 0, 0, 0.65),
+            0 0 8px rgba(255, 215, 90, 0.18);
     }
 }

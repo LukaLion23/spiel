@@ -258,3 +258,24 @@ UPDATE V62
   - Ergebnis- und Ranglisten
 - Auf der Startseite muss unten "Version 62" stehen.
 - Cache-Version: ?v=62
+
+
+UPDATE V63
+
+- "LukasLion" bleibt überall goldfarben.
+- Der starke Glanzeffekt wurde entfernt.
+- Im hellen Modus wird jetzt ein dunkleres, kontrastreiches Gold verwendet.
+- Dadurch ist der Name deutlich besser lesbar.
+- Im dunklen Modus wird automatisch ein etwas hellerer Goldton verwendet.
+- Auf der Startseite muss unten "Version 63" stehen.
+- Cache-Version: ?v=63
+
+
+UPDATE V64
+
+- "LukasLion" ist wieder glänzend / goldfarben.
+- Zusätzlich besitzt der Name jetzt einen schwarzen Rand.
+- Dadurch bleibt der Name auch auf hellen Hintergründen gut lesbar.
+- Für Browser ohne text-stroke gibt es einen Schatten-Fallback.
+- Auf der Startseite muss unten "Version 64" stehen.
+- Cache-Version: ?v=64
