@@ -15,6 +15,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-database.js";
 
 import {
+    leaveGameRoom,
     auth,
     database,
     MAX_PLAYERS,
@@ -27,7 +28,7 @@ import {
     redirectToStatus,
     renderPlayerNameHtml,
     saveRoomSession
-} from "./firebase-common.js?v=67";
+} from "./firebase-common.js?v=69";
 
 
 const HEARTBEAT_INTERVAL_MS = 20000;
@@ -435,7 +436,7 @@ function renderAvailableRooms() {
         const playerCountText =
             Number.isInteger(playerCount) &&
             playerCount >= 1
-                ? `${playerCount} Spieler`
+                ? `${playerCount} Spieler${room.status && room.status !== "lobby" ? " · Einstieg nächste Runde" : ""}`
                 : "Offen";
 
         button.innerHTML = `
@@ -755,14 +756,6 @@ async function joinRoom(roomCode) {
 
         const meta =
             metaSnapshot.val();
-
-        if (meta.status !== "lobby") {
-            alert(
-                "Dieses Spiel wurde bereits gestartet."
-            );
-
-            return;
-        }
 
         const playersSnapshot =
             await get(
@@ -1222,8 +1215,8 @@ async function prepareGame() {
                 [`games/${activeRoomCode}/state/status`]:
                     "roundSetup",
 
-                [`publicRooms/${activeRoomCode}`]:
-                    null
+                [`publicRooms/${activeRoomCode}/status`]:
+                    "roundSetup"
             }
         );
 
@@ -1247,40 +1240,12 @@ async function leaveRoom() {
         return;
     }
 
-    const host = isHost();
-
-    const confirmed =
-        window.confirm(
-            host
-                ? "Als Spielleiter löschst du den ganzen Raum. Fortfahren?"
-                : "Möchtest du den Raum verlassen?"
-        );
-
-    if (!confirmed) {
-        return;
-    }
-
-    if (host) {
+    try {
         await stopHostPresence();
-
-        await update(
-            ref(database),
-            {
-                [`games/${activeRoomCode}`]:
-                    null,
-
-                [`publicRooms/${activeRoomCode}`]:
-                    null
-            }
-        );
-
-    } else {
-        await remove(
-            ref(
-                database,
-                `games/${activeRoomCode}/lobbyPlayers/${currentUser.uid}`
-            )
-        );
+        await leaveGameRoom(activeRoomCode, currentUser.uid);
+    } catch (error) {
+        setStatus("Verlassen fehlgeschlagen: " + error.message);
+        return;
     }
 
     resetPage();

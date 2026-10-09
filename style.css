@@ -2607,3 +2607,14 @@ button.card:disabled
         -webkit-text-fill-color: #e600b8 !important;
     }
 }
+
+/* Compact wrapping hand, with full clickable faces. */
+#handArea.cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(64px, 1fr)); gap: 6px; align-items: start; }
+#handArea .card { box-sizing: border-box; width: 100%; min-width: 0; height: 94px; min-height: 94px; padding: 6px; border-radius: 9px; }
+#handArea .card strong { font-size: 1.65rem; }
+#handArea .blind-card { font-size: .75rem; color: white; background: #354761; }
+.blind-player { min-width: 0; text-align: center; font-size: .75rem; overflow-wrap: anywhere; }
+.blind-player > div:first-child { margin-bottom: 4px; }
+.leave-game-button, #leaveRoomButton { position: fixed; top: 8px; right: 8px; z-index: 100000; width: auto; padding: 9px 12px; font-size: .85rem; margin: 0; }
+body:has(.leave-game-button), body:has(#lobbyPanel:not([hidden])) { padding-top: 48px; }
+#lobbyPanel[hidden] #leaveRoomButton { display: none; }

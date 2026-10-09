@@ -25,7 +25,7 @@ import {
     rotateOrder,
     saveRoomSession,
     shuffle
-} from "./firebase-common.js?v=67";
+} from "./firebase-common.js?v=69";
 
 
 let currentUser = null;
@@ -634,6 +634,9 @@ async function startRound() {
         updates[
             `games/${roomCode}/state`
         ] = {
+            singleCards: cardsPerPlayer === 1
+                ? Object.fromEntries(players.map(player => [player.id, dealtHands[player.id][0]]))
+                : null,
             status: "tips",
             roundNumber,
             cardsPerPlayer,

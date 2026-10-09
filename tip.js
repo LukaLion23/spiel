@@ -12,6 +12,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-database.js";
 
 import {
+    renderBlindHand,
     auth,
     clearRoomSession,
     database,
@@ -24,7 +25,7 @@ import {
     redirectToStatus,
     rotateOrder,
     saveRoomSession
-} from "./firebase-common.js?v=67";
+} from "./firebase-common.js?v=69";
 
 
 let currentUser = null;
@@ -245,6 +246,7 @@ function attachListeners() {
 
             attachHostListener();
             renderPage();
+            renderHand();
         },
         error => {
             showError(error.message);
@@ -268,6 +270,7 @@ function attachListeners() {
             }
 
             renderPage();
+            renderHand();
         }
     );
 
@@ -291,6 +294,7 @@ function attachListeners() {
             }
 
             renderPage();
+            renderHand();
         }
     );
 
@@ -486,6 +490,13 @@ function renderTipOverview(
 
 
 function renderHand() {
+    if (gameState?.playerOrder && currentUser && !gameState.playerOrder.includes(currentUser.uid)) {
+        handArea.innerHTML = "<p>Du bist beigetreten und spielst ab der nächsten Runde mit.</p>";
+        return;
+    }
+
+    if (renderBlindHand(handArea, gameState, currentUser, gameScores, ownHand, null)) return;
+    handArea.closest("section").querySelector("h2").textContent = "Deine Karten";
     const cards =
         objectToCards(ownHand);
 

@@ -13,6 +13,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-database.js";
 
 import {
+    renderBlindHand,
     auth,
     calculateRoundPoints,
     canPlayCard,
@@ -29,7 +30,7 @@ import {
     objectToCards,
     redirectToStatus,
     saveRoomSession
-} from "./firebase-common.js?v=67";
+} from "./firebase-common.js?v=69";
 
 
 let currentUser = null;
@@ -194,6 +195,7 @@ function attachListeners() {
 
             attachHostListener();
             renderPage();
+            scheduleHostActions();
         },
         error => {
             showError(error.message);
@@ -462,6 +464,18 @@ function renderTrick() {
 
 
 function renderHand() {
+    if (gameState?.playerOrder && currentUser && !gameState.playerOrder.includes(currentUser.uid)) {
+        handArea.innerHTML = "<p>Du bist beigetreten und spielst ab der nächsten Runde mit.</p>";
+        return;
+    }
+
+    if (renderBlindHand(handArea, gameState, currentUser, gameScores, ownHand, requestPlayCard)) {
+        const button = handArea.querySelector("button");
+        if (button && playRequestPending) button.disabled = true;
+        handHint.textContent = "Du siehst alle fremden Karten. Deine eigene bleibt bis zum Ausspielen verdeckt.";
+        return;
+    }
+    handArea.closest("section").querySelector("h2").textContent = "Deine Karten";
     if (!currentUser || !gameState) {
         return;
     }
@@ -895,6 +909,10 @@ async function processPlayRequests() {
 
 
 function scheduleHostActions() {
+    if (isHost() && gameState?.status === "roundResult" && !resultTransitionTimer) {
+        resultTransitionTimer = window.setTimeout(moveToNextRoundSetup, 7000);
+    }
+
     if (
         !isHost() ||
         !gameState
@@ -920,6 +938,7 @@ function scheduleHostActions() {
 
 
 async function advanceAfterTrick() {
+    if (!isHost()) return;
     const stateSnapshot =
         await get(
             ref(
@@ -1127,6 +1146,7 @@ function showResultOverlay() {
 
 
 async function moveToNextRoundSetup() {
+    if (!isHost()) return;
     resultTransitionTimer = null;
 
     const stateSnapshot =
