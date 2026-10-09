@@ -1,0 +1,15 @@
+{
+  "database": {
+    "rules": "database.rules.json"
+  },
+  "functions": [
+    {
+      "source": "functions",
+      "codebase": "room-cleanup",
+      "ignore": [
+        "node_modules",
+        ".git"
+      ]
+    }
+  ]
+}

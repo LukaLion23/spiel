@@ -1,0 +1,16 @@
+Räume laufen 24 Stunden nach ihrer Erstellung ab, auch bei laufendem Spiel.
+
+1. Die aktualisierten Regeln aus database.rules.json in Firebase Realtime Database veröffentlichen.
+   Alternativ mit Firebase CLI: firebase deploy --only database --project kartenspiel-629e2
+2. Ohne Serverfunktion löscht die Website abgelaufene Räume, sobald jemand sie geöffnet hat.
+3. Für Löschung auch ohne geöffneten Browser die enthaltene Serverfunktion deployen:
+   npm install -g firebase-tools
+   firebase login
+   cd functions
+   npm install
+   cd ..
+   firebase deploy --only functions:deleteExpiredRooms --project kartenspiel-629e2
+   Diese Variante benötigt den Firebase-Blaze-Tarif (Abrechnung aktiviert).
+   Die Prüfung läuft jede Minute, also Löschung nach 24 Stunden mit bis zu ca. einer Minute Verzögerung.
+
+Die Serverfunktion wurde vorbereitet, aber nicht in deinem Firebase-Projekt bereitgestellt.

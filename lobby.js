@@ -28,7 +28,7 @@ import {
     redirectToStatus,
     renderPlayerNameHtml,
     saveRoomSession
-} from "./firebase-common.js?v=69";
+} from "./firebase-common.js?v=70";
 
 
 const HEARTBEAT_INTERVAL_MS = 20000;
@@ -38,7 +38,7 @@ const HEARTBEAT_INTERVAL_MS = 20000;
  * ohne dass der Raum als verloren gilt.
  */
 const STALE_PUBLIC_ROOM_AFTER_MS =
-    15 * 60 * 1000;
+    24 * 60 * 60 * 1000;
 
 
 let currentUser = null;
@@ -347,13 +347,6 @@ async function refreshAvailableRooms() {
 
 
 function getRoomTimestamp(room) {
-    const lastSeenAt =
-        Number(room?.lastSeenAt);
-
-    if (Number.isFinite(lastSeenAt)) {
-        return lastSeenAt;
-    }
-
     const createdAt =
         Number(room?.createdAt);
 
@@ -494,8 +487,8 @@ async function cleanupStaleRooms() {
                     getRoomTimestamp(room);
 
                 return (
-                    timestamp === 0 ||
-                    serverNow - timestamp >
+                    timestamp > 0 &&
+                    serverNow - timestamp >=
                         STALE_PUBLIC_ROOM_AFTER_MS
                 );
             })
@@ -514,18 +507,10 @@ async function cleanupStaleRooms() {
         cleanupInProgress.add(roomCode);
 
         try {
-            /*
-             * Nur den öffentlichen Lobbyeintrag entfernen.
-             * Das eigentliche Spiel bleibt erhalten, damit
-             * Spieler nach einer Browser-Suspendierung
-             * wieder einsteigen können.
-             */
-            await remove(
-                ref(
-                    database,
-                    `publicRooms/${roomCode}`
-                )
-            );
+            await update(ref(database), {
+                [`games/${roomCode}`]: null,
+                [`publicRooms/${roomCode}`]: null
+            });
 
         } catch (error) {
             /*

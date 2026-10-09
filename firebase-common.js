@@ -818,3 +818,38 @@ if (/(?:tip|game|round)\.html$/.test(location.pathname)) {
         setInterval(publishActiveRoom, 20000);
     });
 }
+
+// Absolute lifetime: 24 hours after creation, independent of activity.
+export const ROOM_LIFETIME_MS = 24 * 60 * 60 * 1000;
+export function roomHasExpired(room, serverNow) {
+    const created = Number(room?.createdAt);
+    return Number.isFinite(created) && created > 0 && serverNow >= created + ROOM_LIFETIME_MS;
+}
+onAuthStateChanged(auth, user => {
+    if (!user) return;
+    let offset = null, rooms = {}, cleaning = false;
+    async function cleanupExpiredRooms() {
+        if (offset === null || cleaning) return;
+        cleaning = true;
+        try {
+            const changes = {};
+            for (const [code, room] of Object.entries(rooms)) {
+                if (roomHasExpired(room, Date.now() + offset)) {
+                    changes[`games/${code}`] = null;
+                    changes[`publicRooms/${code}`] = null;
+                }
+            }
+            if (Object.keys(changes).length) await update(ref(database), changes);
+        } catch (error) { console.error("Abgelaufene Räume löschen:", error); }
+        finally { cleaning = false; }
+    }
+    onValue(ref(database, ".info/serverTimeOffset"), snapshot => {
+        offset = Number(snapshot.val() ?? 0);
+        void cleanupExpiredRooms();
+    });
+    onValue(ref(database, "publicRooms"), snapshot => {
+        rooms = snapshot.val() ?? {};
+        void cleanupExpiredRooms();
+    });
+    setInterval(cleanupExpiredRooms, 60000);
+});

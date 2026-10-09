@@ -2618,3 +2618,14 @@ button.card:disabled
 .leave-game-button, #leaveRoomButton { position: fixed; top: 8px; right: 8px; z-index: 100000; width: auto; padding: 9px 12px; font-size: .85rem; margin: 0; }
 body:has(.leave-game-button), body:has(#lobbyPanel:not([hidden])) { padding-top: 48px; }
 #lobbyPanel[hidden] #leaveRoomButton { display: none; }
+
+/* Small rectangular exit control, overriding shared/mobile button sizing. */
+body button.leave-game-button, body button#leaveRoomButton {
+    position: fixed !important; inset: 6px 6px auto auto !important;
+    width: auto !important; min-width: 0 !important; max-width: none !important;
+    height: 28px !important; min-height: 28px !important;
+    padding: 3px 8px !important; margin: 0 !important;
+    border-radius: 3px !important; font-size: 11px !important;
+    line-height: 20px !important; box-shadow: none !important;
+    z-index: 100000 !important;
+}
