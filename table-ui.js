@@ -69,3 +69,20 @@ if (roomList) {
     previous.onclick=()=>{page--;paginate()}; next.onclick=()=>{page++;paginate()};
     new MutationObserver(paginate).observe(roomList,{childList:true}); paginate();
 }
+
+// Thumb-friendly prediction controls.
+const tipNumber = document.getElementById('tipInput');
+if (tipNumber) {
+    const stepper = document.createElement('div'); stepper.className = 'tip-stepper';
+    const minus = document.createElement('button'); minus.type='button'; minus.textContent='−'; minus.setAttribute('aria-label','Tipp verringern');
+    const plus = document.createElement('button'); plus.type='button'; plus.textContent='+'; plus.setAttribute('aria-label','Tipp erhöhen');
+    tipNumber.before(stepper); stepper.append(minus,tipNumber,plus);
+    function change(delta) {
+        if (tipNumber.disabled) return;
+        tipNumber.value = String(Math.max(0,Math.min(Number(tipNumber.max || 40),Number(tipNumber.value || 0)+delta)));
+        tipNumber.dispatchEvent(new Event('input',{bubbles:true}));
+    }
+    minus.onclick=()=>change(-1); plus.onclick=()=>change(1);
+    const sync=()=>{minus.disabled=tipNumber.disabled;plus.disabled=tipNumber.disabled;};
+    new MutationObserver(sync).observe(tipNumber,{attributes:true,attributeFilter:['disabled']});sync();
+}

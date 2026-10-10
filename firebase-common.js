@@ -109,14 +109,14 @@ export function getCardImagePath(color) {
         normalizeColor(color);
 
     const imageByColor = {
-        Rot: "./assets/cards/rot.png?v=72",
-        Blau: "./assets/cards/blau.png?v=72",
-        "Grün": "./assets/cards/gruen.png?v=72",
-        Gelb: "./assets/cards/gelb.png?v=72"
+        Rot: "./assets/cards/rot.png?v=73",
+        Blau: "./assets/cards/blau.png?v=73",
+        "Grün": "./assets/cards/gruen.png?v=73",
+        Gelb: "./assets/cards/gelb.png?v=73"
     };
 
     return imageByColor[normalizedColor] ??
-        "./assets/cards/blau.png?v=72";
+        "./assets/cards/blau.png?v=73";
 }
 
 
@@ -633,9 +633,14 @@ export function orderedPlayers(
 
 // One-card rounds: only opponents are rendered face up.
 export function renderBlindHand(area, state, user, scores, ownHand, play) {
-    if (state?.cardsPerPlayer !== 1 || !user) return false;
+    const blindRound = state?.cardsPerPlayer === 1 && Boolean(user);
+    area.classList.toggle("blind-mode", blindRound);
+    const section = area.closest("section");
+    const oldOwn = section.querySelector(".blind-own-slot");
+    if (oldOwn) oldOwn.remove();
+    if (!blindRound) return false;
     const title = area.closest("section").querySelector("h2");
-    title.textContent = "Ein-Karten-Runde";
+    title.textContent = "KARTEN DER MITSPIELER";
     area.innerHTML = "";
     for (const id of state.playerOrder ?? []) {
         if (id === user.uid) continue;
@@ -664,7 +669,12 @@ export function renderBlindHand(area, state, user, scores, ownHand, play) {
             back.disabled = state.status !== "playing" || state.currentPlayerId !== user.uid;
             back.onclick = () => play(cards[0].id);
         }
-        area.append(back);
+        const ownSlot = document.createElement("div");
+        ownSlot.className = "blind-own-slot";
+        const ownLabel = document.createElement("span");
+        ownLabel.textContent = "DEINE KARTE · VERDECKT";
+        ownSlot.append(ownLabel, back);
+        section.append(ownSlot);
     }
     return true;
 }
