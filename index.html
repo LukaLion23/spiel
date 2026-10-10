@@ -19,13 +19,13 @@
 
     <meta
         name="theme-color"
-        content="#eef3f8">
+        content="#082b26">
 
     <style>
         :root,
         html {
             color-scheme: only light !important;
-            background-color: #eef3f8 !important;
+            background-color: #082b26 !important;
         }
     </style>
 
@@ -38,12 +38,13 @@
 
     <link
         rel="stylesheet"
-        href="./style.css?v=70">
+        href="./style.css?v=71">
+    <link rel="stylesheet" href="./game-theme.css?v=71">
 </head>
 
 <body class="entry-page">
 
-    <h1>Online-Kartenspiel</h1>
+    <header class="game-brand"><span class="brand-mark" aria-hidden="true">✦</span><div><h1>STICH</h1><span class="brand-caption">DEIN TISCH. DEIN SPIEL.</span></div></header>
 
     <main class="container">
 
@@ -51,7 +52,7 @@
             class="panel"
             id="entryPanel">
 
-            <h2>Spielername</h2>
+            <div class="lobby-art" aria-hidden="true"><span class="art-card art-red">7</span><span class="art-card art-blue">12</span><span class="art-card art-gold">20</span></div><p class="eyebrow">ZUSAMMEN SPIELEN</p><h2>Bereit für den nächsten Stich?</h2>
 
             <label for="playerName">
                 Dein Name
@@ -66,7 +67,7 @@
 
             <section class="create-room-area">
 
-                <h2>Neues Spiel erstellen</h2>
+                <h2>Neuen Tisch eröffnen</h2>
 
                 <label for="roomName">
                     Name des Spielraums
@@ -83,7 +84,7 @@
                     id="createRoomButton"
                     type="button"
                     disabled>
-                    Spielraum erstellen
+                    Tisch eröffnen
                 </button>
 
             </section>
@@ -92,7 +93,7 @@
 
                 <div class="room-browser-heading">
                     <div>
-                        <h2>Offene Spielräume</h2>
+                        <h2>Wähle deinen Tisch</h2>
 
                         <p>
                             Wähle einen Raum aus,
@@ -129,7 +130,7 @@
             </p>
 
             <small class="app-version">
-                Version 70
+                Version 71
             </small>
 
         </section>
@@ -170,7 +171,7 @@
                     <button
                         id="prepareGameButton"
                         type="button">
-                        Alle sind da – weiter
+                        Spiel starten
                     </button>
 
                 </div>
@@ -179,7 +180,7 @@
                     id="leaveRoomButton"
                     class="secondary-button"
                     type="button">
-                    Raum verlassen
+                    Spiel verlassen
                 </button>
 
             </div>

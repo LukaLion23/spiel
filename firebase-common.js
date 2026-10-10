@@ -232,21 +232,9 @@ export function saveRoomSession(
 
 
 export function clearRoomSession() {
-    sessionStorage.removeItem(
-        "kartenspielRoomCode"
-    );
-
-    sessionStorage.removeItem(
-        "kartenspielPlayerName"
-    );
-
-    localStorage.removeItem(
-        "kartenspielRoomCode"
-    );
-
-    localStorage.removeItem(
-        "kartenspielPlayerName"
-    );
+    // Leaving a room keeps the last player name for the next visit.
+    sessionStorage.removeItem("kartenspielRoomCode");
+    localStorage.removeItem("kartenspielRoomCode");
 }
 
 

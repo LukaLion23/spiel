@@ -28,7 +28,7 @@ import {
     redirectToStatus,
     renderPlayerNameHtml,
     saveRoomSession
-} from "./firebase-common.js?v=70";
+} from "./firebase-common.js?v=71";
 
 
 const HEARTBEAT_INTERVAL_MS = 20000;
@@ -1281,6 +1281,8 @@ async function restoreSavedRoom() {
     const savedPlayerName =
         getSavedPlayerName();
 
+    playerNameInput.value = savedPlayerName;
+
     if (
         savedRoomCode.length !== 6 ||
         !savedPlayerName
@@ -1520,3 +1522,10 @@ onAuthStateChanged(
         }
     }
 );
+
+playerNameInput.value = getSavedPlayerName();
+playerNameInput.addEventListener("input", () => {
+    const name = playerNameInput.value.trim();
+    localStorage.setItem("kartenspielPlayerName", name);
+    sessionStorage.setItem("kartenspielPlayerName", name);
+});
