@@ -38,9 +38,9 @@
 
     <link
         rel="stylesheet"
-        href="./style.css?v=77">
-    <link rel="stylesheet" href="./game-theme.css?v=77">
-    <link rel="stylesheet" href="./table-layout.css?v=77">
+        href="./style.css?v=78">
+    <link rel="stylesheet" href="./game-theme.css?v=78">
+    <link rel="stylesheet" href="./table-layout.css?v=78">
 </head>
 
 <body class="entry-page">
@@ -81,7 +81,7 @@
                     id="roomName"
                     type="text"
                     maxlength="40"
-                    placeholder="Zum Beispiel: Freitagsspiel"
+                    placeholder=""
                     autocomplete="off">
 
                 <button
@@ -134,7 +134,7 @@
             </p>
 
             <small class="app-version">
-                Version 77
+                Version 78
             </small>
 
         </section>
@@ -194,7 +194,7 @@
     </main>
 
     <script type="module">
-        import("./lobby.js?v=77")
+        import("./lobby.js?v=78")
             .catch(error => {
                 console.error(error);
 
@@ -211,19 +211,13 @@
             });
     </script>
 
-    <dialog id="tutorialDialog" aria-labelledby="tutorialTitle">
+    <dialog id="tutorialDialog" aria-label="Interaktives Bappo-Probespiel">
         <button id="closeTutorial" type="button" class="tutorial-close" aria-label="Tutorial schließen">×</button>
-        <p class="tutorial-kicker">BAPPO · SO GEHT’S</p>
-        <div id="tutorialVisual" aria-hidden="true"></div>
-        <h2 id="tutorialTitle"></h2>
-        <p id="tutorialText"></p>
-        <div class="tutorial-navigation">
-            <button id="tutorialPrevious" type="button" class="secondary-button">Zurück</button>
-            <span id="tutorialProgress"></span>
-            <button id="tutorialNext" type="button">Weiter</button>
-        </div>
+        <p class="tutorial-kicker">BAPPO · DEIN PROBESPIEL</p>
+        <div id="tutorialGame"></div>
+        <button id="restartTutorial" type="button" class="secondary-button">Neu starten</button>
     </dialog>
-    <script type="module" src="./tutorial.js?v=77"></script>
-    <script type="module" src="./table-ui.js?v=77"></script>
+    <script type="module" src="./tutorial.js?v=78"></script>
+    <script type="module" src="./table-ui.js?v=78"></script>
 </body>
 </html>
