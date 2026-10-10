@@ -38,9 +38,9 @@
 
     <link
         rel="stylesheet"
-        href="./style.css?v=76">
-    <link rel="stylesheet" href="./game-theme.css?v=76">
-    <link rel="stylesheet" href="./table-layout.css?v=76">
+        href="./style.css?v=77">
+    <link rel="stylesheet" href="./game-theme.css?v=77">
+    <link rel="stylesheet" href="./table-layout.css?v=77">
 </head>
 
 <body class="entry-page">
@@ -53,7 +53,10 @@
             class="panel"
             id="entryPanel">
 
-            <div class="lobby-art" aria-hidden="true"><span class="art-card art-red">7</span><span class="art-card art-blue">12</span><span class="art-card art-gold">20</span></div><p class="eyebrow">ZUSAMMEN SPIELEN</p><h2>Bereit für den nächsten Stich?</h2>
+            <div class="start-menu-hero">
+                <button id="openTutorial" type="button" class="secondary-button">? Tutorial</button>
+                <div class="lobby-art" aria-hidden="true"><span class="art-card art-red">7</span><span class="art-card art-blue">12</span><span class="art-card art-gold">20</span></div>
+            </div>
 
             <label for="playerName">
                 Dein Name
@@ -131,7 +134,7 @@
             </p>
 
             <small class="app-version">
-                Version 76
+                Version 77
             </small>
 
         </section>
@@ -191,7 +194,7 @@
     </main>
 
     <script type="module">
-        import("./lobby.js?v=76")
+        import("./lobby.js?v=77")
             .catch(error => {
                 console.error(error);
 
@@ -208,6 +211,19 @@
             });
     </script>
 
-    <script type="module" src="./table-ui.js?v=76"></script>
+    <dialog id="tutorialDialog" aria-labelledby="tutorialTitle">
+        <button id="closeTutorial" type="button" class="tutorial-close" aria-label="Tutorial schließen">×</button>
+        <p class="tutorial-kicker">BAPPO · SO GEHT’S</p>
+        <div id="tutorialVisual" aria-hidden="true"></div>
+        <h2 id="tutorialTitle"></h2>
+        <p id="tutorialText"></p>
+        <div class="tutorial-navigation">
+            <button id="tutorialPrevious" type="button" class="secondary-button">Zurück</button>
+            <span id="tutorialProgress"></span>
+            <button id="tutorialNext" type="button">Weiter</button>
+        </div>
+    </dialog>
+    <script type="module" src="./tutorial.js?v=77"></script>
+    <script type="module" src="./table-ui.js?v=77"></script>
 </body>
 </html>

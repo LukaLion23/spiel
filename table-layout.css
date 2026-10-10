@@ -245,3 +245,27 @@ body #handArea button.card:disabled,body .blind-own-slot button.card:disabled { 
 body .room-entry { min-height:58px; padding:9px 10px; }
 body .join-room-label { display:inline-flex; align-items:center; justify-content:center; font-size:13px !important; padding:9px 12px !important; min-height:38px; border-radius:8px; font-weight:800; white-space:nowrap; }
 body .room-entry-side { flex-shrink:0; }
+body .start-menu-hero { grid-column:1/-1; position:relative; height:70px; width:100%; display:flex; align-items:flex-start; justify-content:center; }
+body .start-menu-hero .lobby-art { display:block !important; height:65px; margin:0; }
+body #openTutorial { position:absolute; left:0; top:4px; z-index:2; font-size:12px; min-height:34px; padding:6px 10px; }
+#tutorialDialog { width:min(92vw,460px); max-height:calc(100dvh - 24px); padding:24px 20px 18px; border:1px solid #b6a46b; border-radius:18px; background:radial-gradient(ellipse at top,#31523a,#10362a); color:#eff3e4; box-shadow:0 25px 80px #001b17a0; }
+#tutorialDialog::backdrop { background:#021a15d9; backdrop-filter:blur(5px); }
+body .tutorial-close { position:absolute; right:8px; top:7px; width:30px; min-height:30px; padding:0; font-size:22px; background:transparent !important; border:0 !important; color:#e6ddc6 !important; box-shadow:none !important; }
+.tutorial-kicker { margin:0 0 14px; font-size:9px; letter-spacing:2px; color:#dfc883; }
+#tutorialTitle { font-size:22px; margin:12px 0; }
+#tutorialText { color:#d3e2cc; font-size:14px; line-height:1.55; margin:0 0 20px; }
+#tutorialVisual { height:95px; display:flex; align-items:center; justify-content:center; }
+.tutorial-symbol { font-size:62px; }
+.tutorial-example { padding:12px; border:1px solid #688960; border-radius:10px; font-size:13px; line-height:1.7; text-align:center; color:#cddcc4; }
+.tutorial-example strong { color:#ffe2a0; }
+.tutorial-cards { display:flex; align-items:center; justify-content:center; gap:12px; }
+.tutorial-cards strong { font-size:13px; color:#ffe0a0; }
+.tutorial-card { width:57px; height:80px; display:grid; place-items:center; font-size:27px; font-weight:900; color:white; border:3px solid #fff0cd; border-radius:7px; transform:rotate(-8deg); box-shadow:0 5px 8px #001b1766; }
+.tutorial-card:nth-child(2) { transform:rotate(8deg); }
+.tutorial-card.blue { background:#347cd0; }
+.tutorial-card.red { background:#d64d4b; }
+.tutorial-card.back { background:repeating-linear-gradient(45deg,#254d65,#254d65 5px,#123646 5px,#123646 10px); }
+.tutorial-navigation { display:flex; align-items:center; justify-content:space-between; gap:10px; }
+.tutorial-navigation button { padding:8px 13px; min-height:39px; font-size:12px; }
+#tutorialProgress { font-size:11px; color:#b7ccb1; }
+@media(max-height:550px) { #tutorialDialog { padding:15px; } #tutorialVisual { height:60px; } .tutorial-symbol { font-size:43px; } .tutorial-card { height:55px; width:39px; font-size:20px; } #tutorialTitle { font-size:18px; margin:7px 0; } #tutorialText { font-size:12px; line-height:1.4; margin-bottom:12px; } }
