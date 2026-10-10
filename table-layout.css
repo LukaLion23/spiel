@@ -206,3 +206,26 @@ body .winner-card::before { content:"🏆"; display:block; font-size:33px; margi
  .points-medallion { grid-column:2; grid-row:2/5; }
  .result-total,#roundLeader,.countdown-text { grid-column:2; margin:2px !important; }
 }
+/* Readable room information. */
+body .room-entry .room-entry-main strong { font-size:15px !important; line-height:1.25; }
+body #activeRoomName,body #activeRoomName strong { color:#f8e4ac !important; font-size:18px; }
+body #lobbyStatus { color:#d9e8d1 !important; font-size:13px; opacity:1; }
+/* Own hidden card centered above the opponent cards. */
+body .hand-panel:has(.blind-mode) { display:flex; flex-direction:column; align-items:center; padding:0 4px !important; }
+body .hand-panel:has(.blind-mode)>h2 { order:0; text-align:center; }
+body .hand-panel:has(.blind-mode)>#handHint { order:1; text-align:center; font-size:9px; }
+body .blind-own-slot { order:2; position:static; width:auto; border:0; padding:0; margin:2px 0 5px; gap:3px; }
+body .blind-own-slot>span { display:none; }
+body .blind-own-slot .card { width:57px; height:81px; min-height:81px; }
+body #handArea.blind-mode { order:3; width:100%; margin:17px 0 0; }
+body .blind-mode::before { content:"KARTEN DER MITSPIELER"; width:100%; text-align:center; top:-15px; font-size:8px; }
+body .blind-player > div:first-child { font-size:8px; padding:2px 0; }
+body .blind-player .card strong { font-size:23px !important; }
+/* A quiet, compact round summary. */
+body .result-dialog { display:block !important; width:min(90vw,340px); padding:18px; border:1px solid #ae9b69; border-radius:16px; background:#173b2b !important; }
+body .result-dialog h2 { font-size:21px; margin:0 0 13px; }
+body .simple-result-row { display:flex; align-items:center; justify-content:space-between; padding:9px 8px; border-bottom:1px solid #65826744; font-size:13px; color:#e2ead7; }
+body .simple-result-row strong { font-size:19px; color:#fff0c3; }
+body .simple-result-row.result-points { background:#294e35 !important; border-radius:8px; margin:4px 0; }
+body .result-dialog .countdown-text { margin:12px 0 0; font-size:11px; color:#b8cdb1; }
+@media(max-height:650px) { body .blind-own-slot .card { width:49px; height:70px; min-height:70px; font-size:9px; } }

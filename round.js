@@ -25,7 +25,7 @@ import {
     rotateOrder,
     saveRoomSession,
     shuffle
-} from "./firebase-common.js?v=73";
+} from "./firebase-common.js?v=74";
 
 
 let currentUser = null;
@@ -469,6 +469,7 @@ function renderFinalResult() {
 
     sortedScores.forEach(
         (player, index) => {
+            if ((player.score ?? 0) === highestScore) return;
             html += `
                 <div class="final-rank-row">
                     <span class="rank-number">

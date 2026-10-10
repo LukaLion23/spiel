@@ -38,9 +38,9 @@
 
     <link
         rel="stylesheet"
-        href="./style.css?v=73">
-    <link rel="stylesheet" href="./game-theme.css?v=73">
-    <link rel="stylesheet" href="./table-layout.css?v=73">
+        href="./style.css?v=74">
+    <link rel="stylesheet" href="./game-theme.css?v=74">
+    <link rel="stylesheet" href="./table-layout.css?v=74">
 </head>
 
 <body class="game-page">
@@ -89,7 +89,7 @@
             class="panel trick-panel"
             id="trickPanel">
 
-            <h2>Aktueller Stich</h2>
+
 
             <div
                 class="played-cards"
@@ -126,25 +126,17 @@
         hidden>
 
         <div class="result-dialog" role="status" aria-live="polite">
-            <div class="celebration-sparks" aria-hidden="true"><i>✦</i><i>✦</i><i>✦</i><i>✦</i><i>✦</i></div>
-            <div class="result-icon" aria-hidden="true">🏆</div>
-            <span class="result-kicker">BAPPO · RUNDENERGEBNIS</span>
-            <h2 id="resultHeadline">Runde geschafft!</h2>
-            <p id="resultMessage"></p>
-            <div class="result-comparison">
-                <div><span>DEIN TIPP</span><strong id="resultTip">0</strong></div>
-                <span class="result-versus" aria-hidden="true">→</span>
-                <div><span>DEINE STICHE</span><strong id="resultTricks">0</strong></div>
-            </div>
-            <div class="points-medallion"><strong id="resultPoints">0</strong><span>RUNDENPUNKTE</span></div>
-            <p class="result-total">Gesamt <strong id="resultTotal">0</strong> Punkte</p>
-            <p id="roundLeader"></p>
-            <p class="countdown-text">Weiter in <strong id="resultCountdown">7</strong> Sekunden</p>
+            <h2>Runde beendet</h2>
+            <div class="simple-result-row"><span>Dein Tipp</span><strong id="resultTip">0</strong></div>
+            <div class="simple-result-row"><span>Geschaffte Stiche</span><strong id="resultTricks">0</strong></div>
+            <div class="simple-result-row result-points"><span>Rundenpunkte</span><strong id="resultPoints">0</strong></div>
+            <div class="simple-result-row"><span>Gesamtpunkte</span><strong id="resultTotal">0</strong></div>
+            <p class="countdown-text">Nächste Runde in <strong id="resultCountdown">7</strong> Sekunden</p>
         </div>
     </div>
 
     <script type="module">
-        import("./game.js?v=73")
+        import("./game.js?v=74")
             .catch(error => {
                 console.error(error);
 
@@ -160,6 +152,6 @@
             });
     </script>
 
-    <script type="module" src="./table-ui.js?v=73"></script>
+    <script type="module" src="./table-ui.js?v=74"></script>
 </body>
 </html>

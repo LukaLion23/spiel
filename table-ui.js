@@ -7,7 +7,7 @@ function layoutFan(area, stacked = false) {
     area.classList.toggle('fan-layout', items.length > 0);
     if (!items.length) return;
     const width = area.clientWidth;
-    const cardWidth = Math.min(stacked ? 76 : 82, Math.max(56, width * .19));
+    const cardWidth = area.classList.contains("blind-mode") ? 52 : Math.min(stacked ? 76 : 82, Math.max(56, width * .19));
     const perRow = Math.max(1, Math.floor((width - cardWidth - 16) / (stacked ? 26 : 23)) + 1);
     const rows = Math.ceil(items.length / perRow);
     const maxHeight = Math.max(100, window.innerHeight * (stacked ? .31 : .42) - (stacked ? 20 : 30));
@@ -19,10 +19,13 @@ function layoutFan(area, stacked = false) {
         const pos = index % perRow;
         const count = Math.min(perRow, items.length - row * perRow);
         const spread = Math.min(width - cardWidth - 16, (count - 1) * (stacked ? 36 : 34));
-        const step = count > 1 ? spread / (count - 1) : 0;
+
         const centered = count > 1 ? pos / (count - 1) * 2 - 1 : 0;
-        item.style.setProperty('--fan-x', `${(width - cardWidth - spread) / 2 + pos * step}px`);
-        item.style.setProperty('--fan-y', `${row * rowStep + Math.abs(centered) * (stacked ? 3 : 12)}px`);
+        const halfAngle = (stacked ? 6 : 13) * Math.PI / 180;
+        const angle = centered * halfAngle;
+        const radius = count > 1 ? spread / (2 * Math.sin(halfAngle)) : 0;
+        item.style.setProperty('--fan-x', `${(width - cardWidth) / 2 + radius * Math.sin(angle)}px`);
+        item.style.setProperty('--fan-y', `${row * rowStep + radius * (1 - Math.cos(angle))}px`);
         item.style.setProperty('--fan-angle', `${centered * (stacked ? 6 : 13)}deg`);
         item.style.setProperty('--fan-width', `${cardWidth}px`);
         item.style.zIndex = String(row * 100 + pos + 1);

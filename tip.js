@@ -25,7 +25,7 @@ import {
     redirectToStatus,
     rotateOrder,
     saveRoomSession
-} from "./firebase-common.js?v=73";
+} from "./firebase-common.js?v=74";
 
 
 let currentUser = null;

@@ -109,14 +109,14 @@ export function getCardImagePath(color) {
         normalizeColor(color);
 
     const imageByColor = {
-        Rot: "./assets/cards/rot.png?v=73",
-        Blau: "./assets/cards/blau.png?v=73",
-        "Grün": "./assets/cards/gruen.png?v=73",
-        Gelb: "./assets/cards/gelb.png?v=73"
+        Rot: "./assets/cards/rot.png?v=74",
+        Blau: "./assets/cards/blau.png?v=74",
+        "Grün": "./assets/cards/gruen.png?v=74",
+        Gelb: "./assets/cards/gelb.png?v=74"
     };
 
     return imageByColor[normalizedColor] ??
-        "./assets/cards/blau.png?v=73";
+        "./assets/cards/blau.png?v=74";
 }
 
 
@@ -640,7 +640,7 @@ export function renderBlindHand(area, state, user, scores, ownHand, play) {
     if (oldOwn) oldOwn.remove();
     if (!blindRound) return false;
     const title = area.closest("section").querySelector("h2");
-    title.textContent = "KARTEN DER MITSPIELER";
+    title.textContent = "DEINE KARTE";
     area.innerHTML = "";
     for (const id of state.playerOrder ?? []) {
         if (id === user.uid) continue;

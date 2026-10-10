@@ -30,7 +30,7 @@ import {
     objectToCards,
     redirectToStatus,
     saveRoomSession
-} from "./firebase-common.js?v=73";
+} from "./firebase-common.js?v=74";
 
 
 let currentUser = null;
@@ -1085,12 +1085,6 @@ function showResultOverlay() {
             ownScore.score ?? 0
         );
 
-    const exact = Number(ownScore.tip) === Number(ownScore.tricksWon);
-    document.getElementById("resultHeadline").textContent = exact ? "Punktlandung!" : "Runde geschafft!";
-    document.getElementById("resultMessage").textContent = exact ? "Tipp getroffen. Stark gespielt!" : "Der nächste Stich wartet auf dich.";
-    document.getElementById("resultOverlay").classList.toggle("perfect-round", exact);
-    const roundLeader = Object.values(gameScores).sort((a, b) => (b.roundPoints ?? 0) - (a.roundPoints ?? 0))[0];
-    document.getElementById("roundLeader").textContent = roundLeader ? `Rundenbeste: ${roundLeader.name} · ${roundLeader.roundPoints ?? 0} Punkte` : "";
     resultOverlay.hidden = false;
 
     if (
