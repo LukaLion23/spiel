@@ -258,3 +258,5 @@ body .start-menu-hero .art-blue { left:44px; top:0; }
 body .start-menu-hero .art-gold { left:78px; }
 
 body .start-menu-hero { display:flex; justify-content:center; align-items:flex-start; gap:0; }
+
+body #entryPanel > label[for="playerName"] { justify-self:center; width:min(100%,360px); text-align:left; }
