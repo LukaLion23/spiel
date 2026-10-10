@@ -25,7 +25,7 @@ import {
     rotateOrder,
     saveRoomSession,
     shuffle
-} from "./firebase-common.js?v=74";
+} from "./firebase-common.js?v=75";
 
 
 let currentUser = null;
@@ -457,39 +457,23 @@ function renderFinalResult() {
             )
             .join(", ");
 
-    let html = `
-        <div class="winner-card">
-            <span>Gewinner</span>
-            <strong>${winners}</strong>
-            <small>${highestScore} Punkte</small>
-        </div>
-
-        <div class="final-ranking">
-    `;
-
-    sortedScores.forEach(
-        (player, index) => {
-            if ((player.score ?? 0) === highestScore) return;
-            html += `
-                <div class="final-rank-row">
-                    <span class="rank-number">
-                        ${index + 1}
-                    </span>
-
-                    <span class="rank-name">
-                        ${renderPlayerNameHtml(player.name)}
-                    </span>
-
-                    <strong class="rank-points">
-                        ${player.score ?? 0}
-                        Punkte
-                    </strong>
-                </div>
-            `;
-        }
-    );
-
-    html += "</div>";
+    const podium = sortedScores.slice(0, 3);
+    let html = '<div class="final-podium">';
+    for (const index of [1, 0, 2]) {
+        const player = podium[index];
+        if (!player) continue;
+        html += `<div class="podium-place place-${index + 1}">
+            <span class="podium-medal" aria-hidden="true">${["🏆", "🥈", "🥉"][index]}</span>
+            <strong class="podium-name">${renderPlayerNameHtml(player.name)}</strong>
+            <span class="podium-score">${player.score ?? 0} Punkte</span>
+            <div class="podium-block">${index + 1}</div>
+        </div>`;
+    }
+    html += '</div><div class="final-ranking">';
+    sortedScores.slice(3).forEach((player, index) => {
+        html += `<div class="final-rank-row"><span class="rank-number">${index + 4}</span><span class="rank-name">${renderPlayerNameHtml(player.name)}</span><strong class="rank-points">${player.score ?? 0} Punkte</strong></div>`;
+    });
+    html += '</div>';
 
     finalResult.innerHTML = html;
 }

@@ -229,3 +229,15 @@ body .simple-result-row strong { font-size:19px; color:#fff0c3; }
 body .simple-result-row.result-points { background:#294e35 !important; border-radius:8px; margin:4px 0; }
 body .result-dialog .countdown-text { margin:12px 0 0; font-size:11px; color:#b8cdb1; }
 @media(max-height:650px) { body .blind-own-slot .card { width:49px; height:70px; min-height:70px; font-size:9px; } }
+body #playerList li,body #playerList li span:not(.master-name) { color:#eff5e7 !important; }
+body #handArea button.card:disabled,body .blind-own-slot button.card:disabled { opacity:1 !important; filter:grayscale(.72) brightness(.78) !important; }
+.final-podium { display:flex; align-items:flex-end; justify-content:center; gap:7px; margin:15px auto 10px; }
+.podium-place { display:flex; flex:1; max-width:150px; min-width:0; flex-direction:column; align-items:center; gap:5px; }
+.podium-medal { font-size:31px; }
+.podium-name { color:#f8edcf; font-size:12px; width:100%; overflow-wrap:anywhere; }
+.podium-score { font-size:10px; color:#d8e2c6; }
+.podium-block { width:100%; height:56px; display:grid; place-items:center; font-size:30px; font-weight:900; border-radius:8px 8px 0 0; color:#283022; background:linear-gradient(#d9dfa6,#99ac72); border:1px solid #e0e6b577; }
+.place-1 .podium-block { height:93px; background:linear-gradient(#ffe1a0,#c89c45); color:#593c15; }
+.place-2 .podium-block { height:71px; background:linear-gradient(#e1e7e1,#97aaa5); }
+.place-3 .podium-block { background:linear-gradient(#e1b99a,#af7b55); color:#4b2d1d; }
+@media(max-height:550px) { .podium-medal { font-size:23px; } .podium-block { height:35px; } .place-1 .podium-block { height:64px; } .place-2 .podium-block { height:48px; } }

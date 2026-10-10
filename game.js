@@ -30,7 +30,7 @@ import {
     objectToCards,
     redirectToStatus,
     saveRoomSession
-} from "./firebase-common.js?v=74";
+} from "./firebase-common.js?v=75";
 
 
 let currentUser = null;

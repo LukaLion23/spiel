@@ -28,7 +28,7 @@ import {
     redirectToStatus,
     renderPlayerNameHtml,
     saveRoomSession
-} from "./firebase-common.js?v=74";
+} from "./firebase-common.js?v=75";
 
 
 const HEARTBEAT_INTERVAL_MS = 20000;
@@ -468,69 +468,30 @@ function renderAvailableRooms() {
 
 
 async function cleanupStaleRooms() {
-    const serverNow =
-        getServerNow();
-
-    /*
-     * Ohne bekannte Firebase-Serverzeit wird nichts
-     * automatisch gelöscht. So kann eine falsch gestellte
-     * Geräteuhr keinen gültigen Raum entfernen.
-     */
-    if (serverNow === null) {
-        return;
-    }
-
-    const staleRoomCodes =
-        Object.entries(availableRooms)
-            .filter(([, room]) => {
-                const timestamp =
-                    getRoomTimestamp(room);
-
-                return (
-                    timestamp > 0 &&
-                    serverNow - timestamp >=
-                        STALE_PUBLIC_ROOM_AFTER_MS
-                );
-            })
-            .map(([roomCode]) =>
-                cleanRoomCode(roomCode)
-            )
-            .filter(roomCode =>
-                roomCode.length === 6
-            );
-
-    for (const roomCode of staleRoomCodes) {
-        if (cleanupInProgress.has(roomCode)) {
-            continue;
-        }
-
-        cleanupInProgress.add(roomCode);
-
+    const now = getServerNow();
+    if (now === null) return;
+    for (const code of Object.keys(availableRooms)) {
+        if (cleanupInProgress.has(code)) continue;
+        cleanupInProgress.add(code);
         try {
-            await update(ref(database), {
-                [`games/${roomCode}`]: null,
-                [`publicRooms/${roomCode}`]: null
+            const meta = (await get(ref(database, `games/${code}/meta`))).val();
+            if (!meta) {
+                await remove(ref(database, `publicRooms/${code}`));
+                delete availableRooms[code];
+                renderAvailableRooms();
+                continue;
+            }
+            const presence = (await get(ref(database, `games/${code}/presence`))).val() ?? {};
+            const expired = now >= Number(meta.createdAt) + STALE_PUBLIC_ROOM_AFTER_MS;
+            const abandoned = Object.keys(presence).length === 0 && now >= Number(meta.lastSeenAt ?? meta.createdAt) + 120000;
+            if (expired || abandoned) await update(ref(database), {
+                [`games/${code}`]: null, [`publicRooms/${code}`]: null
             });
-
-        } catch (error) {
-            /*
-             * Eine Löschung kann abgelehnt werden,
-             * wenn der Raum serverseitig noch nicht
-             * lange genug verwaist ist. Dann wird sie
-             * beim nächsten Listener-Aufruf erneut versucht.
-             */
-            console.debug(
-                `Verwaister Raum ${roomCode} wurde noch nicht gelöscht:`,
-                error.message
-            );
-
-        } finally {
-            cleanupInProgress.delete(
-                roomCode
-            );
-        }
+        } catch (error) { console.debug("Raumprüfung:", error.message); }
+        finally { cleanupInProgress.delete(code); }
     }
 }
+setInterval(() => { void cleanupStaleRooms(); }, 15000);
 
 
 async function createRoom() {
@@ -732,8 +693,10 @@ async function joinRoom(roomCode) {
                 "Dieser Spielraum existiert nicht mehr."
             );
 
-            availableRooms[roomCode] =
-                undefined;
+            if (!metaSnapshot.exists()) {
+                await remove(ref(database, `publicRooms/${roomCode}`));
+            }
+            availableRooms[roomCode] = undefined;
 
             renderAvailableRooms();
             return;

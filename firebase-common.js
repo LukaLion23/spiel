@@ -14,7 +14,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-auth.js";
 
 import {
-    getDatabase, get, ref, onValue, remove, update, serverTimestamp
+    getDatabase, get, ref, onValue, remove, update, serverTimestamp, onDisconnect
 } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-database.js";
 
 
@@ -109,14 +109,14 @@ export function getCardImagePath(color) {
         normalizeColor(color);
 
     const imageByColor = {
-        Rot: "./assets/cards/rot.png?v=74",
-        Blau: "./assets/cards/blau.png?v=74",
-        "Grün": "./assets/cards/gruen.png?v=74",
-        Gelb: "./assets/cards/gelb.png?v=74"
+        Rot: "./assets/cards/rot.png?v=75",
+        Blau: "./assets/cards/blau.png?v=75",
+        "Grün": "./assets/cards/gruen.png?v=75",
+        Gelb: "./assets/cards/gelb.png?v=75"
     };
 
     return imageByColor[normalizedColor] ??
-        "./assets/cards/blau.png?v=74";
+        "./assets/cards/blau.png?v=75";
 }
 
 
@@ -205,6 +205,7 @@ export function saveRoomSession(
     roomCode,
     playerName
 ) {
+    void startRoomPresence(roomCode);
     sessionStorage.setItem(
         "kartenspielRoomCode",
         roomCode
@@ -682,6 +683,7 @@ export function renderBlindHand(area, state, user, scores, ownHand, play) {
 
 // Leaving transfers host ownership before removing the old host.
 export async function leaveGameRoom(code, uid) {
+    await remove(ref(database, `games/${code}/presence/${uid}`));
     const [metaSnap, playersSnap] = await Promise.all([
         get(ref(database, `games/${code}/meta`)),
         get(ref(database, `games/${code}/lobbyPlayers`))
@@ -803,7 +805,7 @@ if (/(?:tip|game|round)\.html$/.test(location.pathname)) {
                 const meta = (await get(ref(database, `games/${code}/meta`))).val();
                 if (!meta || meta.hostId !== user.uid) return;
                 const players = (await get(ref(database, `games/${code}/lobbyPlayers`))).val() ?? {};
-                await update(ref(database), { [`publicRooms/${code}`]: {
+                await update(ref(database), { [`games/${code}/meta/lastSeenAt`]: serverTimestamp(), [`publicRooms/${code}`]: {
                     hostId: user.uid, hostName: players[user.uid]?.name ?? meta.hostName ?? "Spielleiter",
                     roomName: meta.roomName ?? "Spielraum", createdAt: meta.createdAt ?? Date.now(),
                     lastSeenAt: serverTimestamp(), playerCount: Object.keys(players).length, status: meta.status
@@ -851,3 +853,23 @@ onAuthStateChanged(auth, user => {
     });
     setInterval(cleanupExpiredRooms, 60000);
 });
+
+// Presence survives short page transitions via a two-minute grace period.
+let presenceRoom = null;
+async function startRoomPresence(code) {
+    const uid = auth.currentUser?.uid;
+    if (!uid || !code || code.length !== 6 || presenceRoom === code) return;
+    presenceRoom = code;
+    const member = (await get(ref(database, `games/${code}/lobbyPlayers/${uid}`))).exists();
+    if (!member) { presenceRoom = null; return; }
+    const connection = ref(database, ".info/connected");
+    const ownPresence = ref(database, `games/${code}/presence/${uid}`);
+    onValue(connection, async snapshot => {
+        if (!snapshot.val()) return;
+        try {
+            await onDisconnect(ownPresence).remove();
+            await update(ownPresence, { lastSeenAt: serverTimestamp() });
+        } catch (error) { console.error("Anwesenheit:", error); }
+    });
+}
+onAuthStateChanged(auth, user => { if (user) void startRoomPresence(getRoomCodeFromUrl()); });
