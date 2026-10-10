@@ -241,3 +241,7 @@ body #handArea button.card:disabled,body .blind-own-slot button.card:disabled { 
 .place-2 .podium-block { height:71px; background:linear-gradient(#e1e7e1,#97aaa5); }
 .place-3 .podium-block { background:linear-gradient(#e1b99a,#af7b55); color:#4b2d1d; }
 @media(max-height:550px) { .podium-medal { font-size:23px; } .podium-block { height:35px; } .place-1 .podium-block { height:64px; } .place-2 .podium-block { height:48px; } }
+
+body .room-entry { min-height:58px; padding:9px 10px; }
+body .join-room-label { display:inline-flex; align-items:center; justify-content:center; font-size:13px !important; padding:9px 12px !important; min-height:38px; border-radius:8px; font-weight:800; white-space:nowrap; }
+body .room-entry-side { flex-shrink:0; }

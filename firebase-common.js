@@ -109,14 +109,14 @@ export function getCardImagePath(color) {
         normalizeColor(color);
 
     const imageByColor = {
-        Rot: "./assets/cards/rot.png?v=75",
-        Blau: "./assets/cards/blau.png?v=75",
-        "Grün": "./assets/cards/gruen.png?v=75",
-        Gelb: "./assets/cards/gelb.png?v=75"
+        Rot: "./assets/cards/rot.png?v=76",
+        Blau: "./assets/cards/blau.png?v=76",
+        "Grün": "./assets/cards/gruen.png?v=76",
+        Gelb: "./assets/cards/gelb.png?v=76"
     };
 
     return imageByColor[normalizedColor] ??
-        "./assets/cards/blau.png?v=75";
+        "./assets/cards/blau.png?v=76";
 }
 
 

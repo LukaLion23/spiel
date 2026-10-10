@@ -30,7 +30,7 @@ import {
     objectToCards,
     redirectToStatus,
     saveRoomSession
-} from "./firebase-common.js?v=75";
+} from "./firebase-common.js?v=76";
 
 
 let currentUser = null;
@@ -910,7 +910,7 @@ async function processPlayRequests() {
 
 function scheduleHostActions() {
     if (isHost() && gameState?.status === "roundResult" && !resultTransitionTimer) {
-        resultTransitionTimer = window.setTimeout(moveToNextRoundSetup, 7000);
+        resultTransitionTimer = window.setTimeout(moveToNextRoundSetup, 4000);
     }
 
     if (
@@ -1097,7 +1097,7 @@ function showResultOverlay() {
     resultRoundNumber =
         gameState.roundNumber;
 
-    let seconds = 7;
+    let seconds = 4;
 
     resultCountdown.textContent =
         String(seconds);
@@ -1139,7 +1139,7 @@ function showResultOverlay() {
         resultTransitionTimer =
             window.setTimeout(
                 moveToNextRoundSetup,
-                7000
+                4000
             );
     }
 }
